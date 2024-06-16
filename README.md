@@ -1,1 +1,1 @@
-# curiosity-mastcam-anomaly-detection
+# Curiosity Mastcam Anomaly Detection
