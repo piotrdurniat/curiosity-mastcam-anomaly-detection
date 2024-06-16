@@ -3,6 +3,7 @@ import torch.nn
 from tqdm import tqdm 
 import torchvision.transforms as transforms
 import dataset
+import yaml
 from torch.utils.data import DataLoader
 
 PATH_TRAIN  = './dataset/train_typical'
@@ -22,5 +23,20 @@ def train_model(model_name, epoch_number, lr, device):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     val_loader = DataLoader(valdiaiton_dataset, batch_size=64)
 
-    print("heloo")
+    model_config = None
+
+    if model_name == "GAN":
+        
+        with open('GAN_config.yaml', 'r') as file:
+            model_config = yaml.safe_load(file)
+
+    elif model_name == "VAE":
+        pass
+
+    elif model_name == "FLOW":
+        pass
+    
+    else:
+        raise ValueError("Unkown Model")
+        
 
