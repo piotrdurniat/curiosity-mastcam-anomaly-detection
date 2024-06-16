@@ -1,1 +1,1 @@
-# Curiosity Mastcam Anomaly Detection
+# Curiosity Mastcam Novelty Detection
