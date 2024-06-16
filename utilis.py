@@ -9,13 +9,13 @@ PATH_TRAIN  = './dataset/train_typical'
 PATH_VALIDATION  = './dataset/validation_typical'
 
 
-def train_model(model_name, epoch_numer, lr, device):
+def train_model(model_name, epoch_number, lr, device):
 
     transform=transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
-
+    print(model_name, lr, epoch_number, device)
     train_dataset = dataset.ImageDataLoader(PATH_TRAIN, transform=transform)
     valdiaiton_dataset = dataset.ImageDataLoader(PATH_VALIDATION, transform=transform)
 
@@ -24,4 +24,3 @@ def train_model(model_name, epoch_numer, lr, device):
 
     print("heloo")
 
-    
