@@ -27,7 +27,10 @@ class GanDiscriminator(nn.Module):
             nn.LeakyReLU(0.1, inplace=False),
         )
 
-        self.final_layers  = nn.Linear(16896, 1)
+        self.final_layers  = nn.Sequential(
+            nn.Linear(16896, 1024),
+            nn.Linear(1024, 1),
+            )
         self.prediction = nn.Sigmoid()
 
     def forward(self, x_inp, z_inp):

@@ -57,6 +57,14 @@ class TrainerBiGAN:
                 loss_d = criterion(out_true, y_true) + criterion(out_fake, y_fake)
                 loss_ge = criterion(out_fake, y_true) + criterion(out_true, y_fake)
 
+                """TUTAJ JEST PROBLEM -> to nie zadziała
+                loss_d.backward(retain_graph=True)
+                optimizer_d.step()
+
+                loss_ge.backward()
+                optimizer_ge.step()
+                """
+        
                 loss_d.backward(retain_graph=True)
                 loss_ge.backward()
 
@@ -65,10 +73,7 @@ class TrainerBiGAN:
                 ge_losses += loss_ge.item()
                 d_losses += loss_d.item()
 
-            if epoch % 10:
-                print("Training... Epoch: {}, Discrimiantor Loss: {:.3f}, Generator Loss: {:.3f}".format(
-                    epoch, d_losses/len(self.train_loader), ge_losses/len(self.train_loader)))
-                
-
-
-                
+            print("Training... Epoch: {}, Discrimiantor Loss: {:.3f}, Generator Loss: {:.3f}".format(
+                epoch+1, d_losses/len(self.train_loader), ge_losses/len(self.train_loader)))
+        
+        return self.Encoder, self.Generator, self.Discriminator
