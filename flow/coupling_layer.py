@@ -2,16 +2,16 @@ import torch
 import torch.nn as nn
 
 from torch import Tensor
-from mask import get_mask
 
 
 class CouplingLayer(nn.Module):
-    def __init__(self, in_dim: int, hidden_dim: int, mask: Tensor):
+    def __init__(self, in_dim: int, hidden_dim: int, reverse_mask: bool = False):
         super(CouplingLayer, self).__init__()
 
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.mask = nn.Parameter(mask, requires_grad=False)
+        self.reverse_mask = reverse_mask
+        self.mask = None
 
         # Layers for scale computation
         self.scale_conv1 = nn.Conv2d(self.in_dim, self.hidden_dim, kernel_size=3, padding=1)
@@ -46,7 +46,31 @@ class CouplingLayer(nn.Module):
         return t
 
 
+    def _create_mask(
+        self,
+        height: int,
+        width: int,
+        channels: int,
+        reverse: bool = False,
+        dtype: torch.dtype = torch.float32,
+        requires_grad: bool = False,
+        device: torch.device = None,
+    ):
+        checkerboard = [[((i % 2) + j) % 2 for j in range(width)] for i in range(height)]
+        mask = torch.tensor(checkerboard, dtype=dtype, device=device, requires_grad=requires_grad)
+
+        if reverse:
+            mask = 1 - mask
+
+        mask = mask.unsqueeze(0).repeat(channels, 1, 1).unsqueeze(0)
+
+        return mask
+
+
     def forward(self, x: Tensor):
+        mask = self._create_mask(x.size(2), x.size(3), x.size(1), self.reverse_mask)
+        self.mask = nn.Parameter(mask, requires_grad=False)
+
         s = self._compute_scale(x)
         t = self._compute_translation(x)
 
