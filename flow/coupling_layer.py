@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
+
 from torch import Tensor
+from mask import get_mask
 
 
 class CouplingLayer(nn.Module):
@@ -12,52 +14,53 @@ class CouplingLayer(nn.Module):
         self.mask = nn.Parameter(mask, requires_grad=False)
 
         # Layers for scale computation
-        self.scale_linear1 = nn.Linear(self.in_dim, self.hidden_dim)
-        self.scale_linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
-        self.scale_linear3 = nn.Linear(self.hidden_dim, self.in_dim)
-        self.scale = nn.Parameter(torch.Tensor(self.in_dim))
+        self.scale_conv1 = nn.Conv2d(self.in_dim, self.hidden_dim, kernel_size=3, padding=1)
+        self.scale_conv2 = nn.Conv2d(self.hidden_dim, self.hidden_dim, kernel_size=1)
+        self.scale_conv3 = nn.Conv2d(self.hidden_dim, self.in_dim, kernel_size=3, padding=1)
+        self.scale = nn.Parameter(torch.Tensor(self.in_dim, 1, 1))
         nn.init.normal_(self.scale)
 
         # Layers for translation computation
-        self.translation_linear1 = nn.Linear(self.in_dim, self.hidden_dim)
-        self.translation_linear2 = nn.Linear(self.hidden_dim, self.hidden_dim)
-        self.translation_linear3 = nn.Linear(self.hidden_dim, self.in_dim)
+        self.translation_conv1 = nn.Conv2d(self.in_dim, self.hidden_dim, kernel_size=3, padding=1)
+        self.translation_conv2 = nn.Conv2d(self.hidden_dim, self.hidden_dim, kernel_size=1)
+        self.translation_conv3 = nn.Conv2d(self.hidden_dim, self.in_dim, kernel_size=3, padding=1)
 
 
-        def _compute_scale(self, x: Tensor):
-            x_masked = x * self.mask
+    def _compute_scale(self, x: Tensor):
+        x_masked = x * self.mask
 
-            s = torch.relu(self.scale_linear1(x_masked))
-            s = torch.relu(self.scale_linear2(s))
-            s = torch.relu(self.scale_linear3(s)) * self.scale
+        s = torch.relu(self.scale_conv1(x_masked))
+        s = torch.relu(self.scale_conv2(s))
+        s = torch.relu(self.scale_conv3(s)) * self.scale
 
-            return s
+        return s
 
 
-        def _compute_translation(self, x: Tensor):
-            x_masked = x * self.mask
+    def _compute_translation(self, x: Tensor):
+        x_masked = x * self.mask
 
-            t = torch.relu(self.translation_linear1(x_masked))
-            t = torch.relu(self.translation_linear2(t))
-            t = torch.relu(self.translation_linear3(t))
+        t = torch.relu(self.translation_conv1(x_masked))
+        t = torch.relu(self.translation_conv2(t))
+        t = torch.relu(self.translation_conv3(t))
 
-            return t
-        
-        def forward(self, x: Tensor):
-            s = self._compute_scale(x)
-            t = self._compute_translation(x)
+        return t
 
-            y = self.mask * x + (1 - self.mask) * (x * torch.exp(s) + t)
-            logdet = torch.sum((1 - self.mask) * s, -1)
 
-            return y, logdet
+    def forward(self, x: Tensor):
+        s = self._compute_scale(x)
+        t = self._compute_translation(x)
+
+        y = self.mask * x + (1 - self.mask) * (x * torch.exp(s) + t)
+        logdet = torch.sum((1 - self.mask) * s, dim=[1, 2, 3])
     
-        def inverse(self, y: Tensor):
-            s = self._compute_scale(y)
-            t = self._compute_translation(y)
+        return y, logdet
+    
 
-            x = self.mask * y + (1 - self.mask) * ((y - t) * torch.exp(-s))
-            logdet = torch.sum((1 - sum.mask) * (-s), -1)
+    def inverse(self, y: Tensor):
+        s = self._compute_scale(y)
+        t = self._compute_translation(y)
 
-            return x, logdet
+        x = self.mask * y + (1 - self.mask) * ((y - t) * torch.exp(-s))
+        logdet = torch.sum((1 - self.mask) * (-s), dim=[1, 2, 3])
 
+        return x, logdet
