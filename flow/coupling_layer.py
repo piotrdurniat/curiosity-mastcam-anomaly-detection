@@ -75,9 +75,9 @@ class CouplingLayer(nn.Module):
         t = self._compute_translation(x)
 
         y = self.mask * x + (1 - self.mask) * (x * torch.exp(s) + t)
-        logdet = torch.sum((1 - self.mask) * s, dim=[1, 2, 3])
+        log_det_jacobian = torch.sum((1 - self.mask) * s, dim=[1, 2, 3])
     
-        return y, logdet
+        return y, log_det_jacobian
     
 
     def inverse(self, y: Tensor):
@@ -85,6 +85,6 @@ class CouplingLayer(nn.Module):
         t = self._compute_translation(y)
 
         x = self.mask * y + (1 - self.mask) * ((y - t) * torch.exp(-s))
-        logdet = torch.sum((1 - self.mask) * (-s), dim=[1, 2, 3])
+        log_det_jacobian = torch.sum((1 - self.mask) * (-s), dim=[1, 2, 3])
 
-        return x, logdet
+        return x, log_det_jacobian
