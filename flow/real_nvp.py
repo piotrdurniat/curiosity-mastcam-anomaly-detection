@@ -1,6 +1,9 @@
 import torch
 import torch.nn as nn
 
+from torch import Tensor
+from typing import Tuple
+
 from coupling_layer import CouplingLayer
 
 
@@ -22,7 +25,7 @@ class RealNVP(nn.Module):
         )
 
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         out = x
         log_det_total = 0.0
 
@@ -37,7 +40,7 @@ class RealNVP(nn.Module):
         return y, log_det_total
     
 
-    def inverse(self, y):
+    def inverse(self, y: Tensor) -> Tuple[Tensor, Tensor]:
         log_det_total = 0.0
 
         log_det_norm = torch.sum(torch.log(torch.abs(1.0 / 4.0 * 1 / (1 - (y / 4) ** 2))), dim=[1, 2, 3])
