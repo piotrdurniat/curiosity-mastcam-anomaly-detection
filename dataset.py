@@ -1,4 +1,5 @@
 from torch.utils import data
+import torch
 import numpy as np
 import os
 
@@ -18,8 +19,10 @@ class ImageDataLoader(data.Dataset):
         
         img_path = os.path.join(self.directory, self.file_names[idx])
         image = np.load(img_path)
-
+        image = image.astype(np.float32)
+        
         if self.transform is not None:
             image = self.transform(image)
 
-        return image
+        image_labels = torch.zeros(image.shape[0])
+        return image, image_labels
