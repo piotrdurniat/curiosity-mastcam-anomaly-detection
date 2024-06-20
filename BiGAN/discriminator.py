@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch
 
 class GanDiscriminator(nn.Module):
-
     def __init__(self):
         super(GanDiscriminator, self).__init__()
 
@@ -10,6 +9,7 @@ class GanDiscriminator(nn.Module):
             nn.Conv2d(6, 64, kernel_size=4, stride=2, padding=1),
             nn.LeakyReLU(0.1),
             nn.Dropout2d(p=0.5),
+
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(128, affine=False),
             nn.LeakyReLU(0.1),

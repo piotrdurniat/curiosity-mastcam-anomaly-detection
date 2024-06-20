@@ -27,7 +27,6 @@ RANDOM_SEED = 42
 FREQ_PRINT = 20 
 
 latent_dim = 200 #<- to do 
-=======
 PATH_TRAIN  = './dataset/train_typical'
 PATH_VALIDATION  = './dataset/validation_typical'
 
