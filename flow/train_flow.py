@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from real_nvp import RealNVP
+from .real_nvp import RealNVP
 
 from torch import Tensor
 from torch.utils.data import DataLoader
@@ -48,6 +48,7 @@ class TrainerRealNVP:
                 self.optimizer.step()
 
                 epoch_loss += nll.item()
+                print(nll.item())
 
             print(f"Training... Epoch: {epoch+1}, Loss: {epoch_loss / len(self.train_loader):.3f}")
 

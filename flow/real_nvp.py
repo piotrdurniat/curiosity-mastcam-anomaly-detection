@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch import Tensor
 from typing import Tuple
 
-from coupling_layer import CouplingLayer
+from .coupling_layer import CouplingLayer
 
 
 class RealNVP(nn.Module):
