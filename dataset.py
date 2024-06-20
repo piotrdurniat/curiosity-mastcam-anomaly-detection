@@ -26,3 +26,26 @@ class ImageDataLoader(data.Dataset):
 
         image_labels = torch.zeros(image.shape[0])
         return image, image_labels
+    
+
+class ToTensorWithScaling:
+    def __init__(self, min_val: float = 0.0, max_val: float = 1.0, eps: float = 1e-6):
+        self.min_val = min_val
+        self.max_val = max_val
+        self.eps = eps
+
+    def __call__(self, image: np.ndarray):
+        image = torch.tensor(image, dtype=torch.float32)
+        image = torch.permute(image, (2, 0, 1))
+        
+        # Get min and max values for every channel
+        min_vals = image.amin(dim=(1, 2), keepdim=True)
+        max_vals = image.amax(dim=(1, 2), keepdim=True)
+
+        # [0, 1]
+        image = (image - min_vals) / (max_vals - min_vals + self.eps)
+
+        # [min_val, max_val]
+        image = image * (self.max_val - self.min_val) + self.min_val
+
+        return image
