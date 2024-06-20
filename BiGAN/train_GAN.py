@@ -5,7 +5,6 @@ from . import encoder, discriminator, generator, weights
 from tqdm import  tqdm
 from torch.autograd import Variable
 
-
 class TrainerBiGAN:
 
     def __init__(self, epoch_number, lr, train_loader, device):
@@ -30,6 +29,7 @@ class TrainerBiGAN:
         optimizer_d = optim.Adam(self.Discriminator.parameters(), lr=self.lr)
 
         criterion = nn.BCELoss()
+
         torch.autograd.set_detect_anomaly(True)
         for epoch in tqdm(range(self.epoch_number)):
 
@@ -39,6 +39,8 @@ class TrainerBiGAN:
             d_losses = 0
 
             for image, _ in self.train_loader:
+
+
                 optimizer_d.zero_grad()
                 optimizer_ge.zero_grad()
             
@@ -53,7 +55,7 @@ class TrainerBiGAN:
 
                 out_true = self.Discriminator(x_true, z_true)
                 out_fake = self.Discriminator(x_fake, z_fake)
-
+            
                 loss_d = criterion(out_true, y_true) + criterion(out_fake, y_fake)
                 loss_ge = criterion(out_fake, y_true) + criterion(out_true, y_fake)
 
@@ -66,10 +68,11 @@ class TrainerBiGAN:
                 """
         
                 loss_d.backward(retain_graph=True)
-                loss_ge.backward()
-
-                optimizer_ge.step()
                 optimizer_d.step()
+
+                loss_ge.backward()
+                optimizer_ge.step()
+                
                 ge_losses += loss_ge.item()
                 d_losses += loss_d.item()
 
