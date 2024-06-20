@@ -13,6 +13,7 @@ import BiGAN.detect_GAN
 import BiGAN.discriminator
 import BiGAN.encoder
 import BiGAN.generator
+import BiGAN.results
 import BiGAN.train_GAN
 import dataset
 import yaml
@@ -37,20 +38,9 @@ PATH_VALIDATION  = './dataset/validation_typical'
 
 latent_dim = 200 #<- to do 
 
-class SelectChannels(object):
-    def __call__(self, img):
-        # img is a PyTorch tensor of shape (C, H, W)
-        # Assuming input has 6 channels, select first 3 channels
-        return img[:3, :, :]  
-    
 def train_model(model_name, epoch_number, lr, device):
 
     transform = dataset.ToTensorWithScaling()
-
-#     transform=transforms.Compose([
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.5,), (0.5,)),
-#     ])
 
     print(model_name, lr, epoch_number, device)
 
@@ -64,8 +54,8 @@ def train_model(model_name, epoch_number, lr, device):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     val_loader = DataLoader(valdiaiton_dataset, batch_size=64)
     
-    test_typical_loader = DataLoader(test_typical_dataset, batch_size=32)
-    test_novel_loader = DataLoader(test_novel_dataset, batch_size=32)
+    test_typical_loader = DataLoader(test_typical_dataset, batch_size=1)
+    test_novel_loader = DataLoader(test_novel_dataset, batch_size=1)
 
 
     if model_name == "GAN":
@@ -100,14 +90,7 @@ def train_model(model_name, epoch_number, lr, device):
 
         tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
         result = tester.test()
-
-        # tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_typical_loader, device)
-        # result = tester.test()
-
-        # print("#################### NOVEL ####################")
-
-        # tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
-        # result = tester.test()
+        
     elif model_name == "VAE":
         pass
 

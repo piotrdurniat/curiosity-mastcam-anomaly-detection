@@ -36,16 +36,18 @@ class GanDiscriminator(nn.Module):
     def forward(self, x_inp, z_inp):
         for index, layer in enumerate(self.D_X_layers):
             if isinstance(layer, nn.Conv2d):
-                layer.weight = nn.Parameter(layer.weight.clone())
-                layer.bias = nn.Parameter(layer.bias.clone())
+                if self.training:
+                    layer.weight = nn.Parameter(layer.weight.clone())
+                    layer.bias = nn.Parameter(layer.bias.clone())
                 x_inp = layer(x_inp)
             else:
                 x_inp = layer(x_inp)
 
         for index, layer in enumerate(self.D_Z_layers):
             if isinstance(layer, nn.Linear):
-                layer.weight = nn.Parameter(layer.weight.clone())
-                layer.bias = nn.Parameter(layer.bias.clone())
+                if self.training:
+                    layer.weight = nn.Parameter(layer.weight.clone())
+                    layer.bias = nn.Parameter(layer.bias.clone())
                 z_inp = layer(z_inp)
             else:
                 z_inp = layer(z_inp)
@@ -55,11 +57,13 @@ class GanDiscriminator(nn.Module):
 
         for index, layer in enumerate(self.final_layers):
             if isinstance(layer, nn.Linear):
-                layer.weight = nn.Parameter(layer.weight.clone())
-                layer.bias = nn.Parameter(layer.bias.clone())
+                if self.training:
+                    layer.weight = nn.Parameter(layer.weight.clone())
+                    layer.bias = nn.Parameter(layer.bias.clone())
                 concat = layer(concat)
             else:
                 concat = layer(concat)
 
         result = self.prediction(concat)
         return result
+
