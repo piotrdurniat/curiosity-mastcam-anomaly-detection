@@ -8,9 +8,6 @@ import BiGAN.discriminator
 import BiGAN.encoder
 import BiGAN.generator
 import BiGAN.train_GAN
-import torch.nn
-from tqdm import tqdm 
-import torchvision.transforms as transforms
 import dataset
 import yaml
 from torch.utils.data import DataLoader
@@ -30,6 +27,14 @@ latent_dim = 200 #<- to do
 PATH_TRAIN  = './dataset/train_typical'
 PATH_VALIDATION  = './dataset/validation_typical'
 
+latent_dim = 200 #<- to do 
+
+class SelectChannels(object):
+    def __call__(self, img):
+        # img is a PyTorch tensor of shape (C, H, W)
+        # Assuming input has 6 channels, select first 3 channels
+        return img[:3, :, :]  
+    
 def train_model(model_name, epoch_number, lr, device):
 
     transform=transforms.Compose([
@@ -55,7 +60,6 @@ def train_model(model_name, epoch_number, lr, device):
 
 
     if model_name == "GAN":
-        
         # model = BiGAN.train_GAN.TrainerBiGAN(epoch_number, lr, train_loader, device)
         # encoder, generator, discriminator = model.train()
 
@@ -97,4 +101,4 @@ def train_model(model_name, epoch_number, lr, device):
         pass
     
     else:
-        raise ValueError("Unkown Model")
+        raise ValueError("Unknown Model")
