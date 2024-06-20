@@ -13,16 +13,16 @@ class AnomalyScore():
         self.device = device
         self.loader = loader
 
-    def test(self):
+    def test(self, type_of_label):
 
-        results_list = [] 
+        results_dict = {}
 
         self.encoder.eval()
         self.generator.eval()
         self.discriminator.eval()
 
 
-        for x, _ in self.loader: 
+        for index, (x, _) in enumerate(self.loader): 
 
             x = x.to(self.device)
             z = self.encoder(x)
@@ -37,9 +37,8 @@ class AnomalyScore():
             y_true = Variable(torch.ones((x.size(0), 1)).to(self.device)) 
 
             L_D = cross_loss(dis_output, y_true)
-
             A = self.alpha * L_G + (1 - self.alpha) * L_D
-            print(A)
-            results_list.append(A)
+            results_dict[type_of_label + '_' + str(index)] = A.detach().numpy()
+            print(type_of_label + '_' + str(index))
 
-        return results_list
+        return results_dict
