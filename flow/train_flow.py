@@ -53,8 +53,8 @@ class TrainerRealNVP:
                 epoch_loss += nll.item()
                 print(nll.item())
 
-            epoch_time = time.time() - start_time()
-            print(f"Epoch: {epoch+1} done in {epoch_time:.2f} seconds")
+            epoch_time = time.time() - start_time
+            print(f"Epoch: {epoch + 1} done in {epoch_time:.2f} seconds")
             print(f"Loss: {epoch_loss / len(self.train_loader):.3f}")
 
 
