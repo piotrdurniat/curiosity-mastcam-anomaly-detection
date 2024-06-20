@@ -4,6 +4,8 @@ import torch.optim as optim
 from . import encoder, discriminator, generator, weights
 from tqdm import  tqdm
 from torch.autograd import Variable
+import matplotlib.pyplot as plt
+
 
 class TrainerBiGAN:
 
@@ -13,6 +15,28 @@ class TrainerBiGAN:
         self.lr = lr
         self.train_loader = train_loader
         self.device = device
+
+
+    def plot_loss(self, enc_gen_loss, dis_loss):
+        
+        plt.figure(figsize=(12, 6))
+    
+        plt.subplot(1, 2, 1)
+        plt.plot(self.epoch_number, enc_gen_loss, label='Strata koder-generator')
+        plt.xlabel('Liczba epok')
+        plt.ylabel('Strata')
+        plt.title('Strata koder-generator w zależności od liczby epok')
+        plt.legend()
+        
+        plt.subplot(1, 2, 2)
+        plt.plot(self.epoch_number, dis_loss, label='Strata dyskryminator')
+        plt.xlabel('Liczba epok')
+        plt.ylabel('Strata')
+        plt.title('Strata dyskryminator w zależności od liczby epok')
+        plt.legend()
+        
+        plt.tight_layout()
+        plt.savefig("/results/BiGAN_loss.png")
 
     def train(self):
 
@@ -29,8 +53,10 @@ class TrainerBiGAN:
         optimizer_d = optim.Adam(self.Discriminator.parameters(), lr=self.lr)
 
         criterion = nn.BCELoss()
+        loss_enc_gen = []
+        loss_dis = []
 
-        torch.autograd.set_detect_anomaly(True)
+
         for epoch in tqdm(range(self.epoch_number)):
 
             print(f"Starting epoch {epoch + 1}")
@@ -59,14 +85,6 @@ class TrainerBiGAN:
                 loss_d = criterion(out_true, y_true) + criterion(out_fake, y_fake)
                 loss_ge = criterion(out_fake, y_true) + criterion(out_true, y_fake)
 
-                """TUTAJ JEST PROBLEM -> to nie zadziała
-                loss_d.backward(retain_graph=True)
-                optimizer_d.step()
-
-                loss_ge.backward()
-                optimizer_ge.step()
-                """
-        
                 loss_d.backward(retain_graph=True)
                 optimizer_d.step()
 
@@ -78,5 +96,10 @@ class TrainerBiGAN:
 
             print("Training... Epoch: {}, Discrimiantor Loss: {:.3f}, Generator Loss: {:.3f}".format(
                 epoch+1, d_losses/len(self.train_loader), ge_losses/len(self.train_loader)))
-        
+
+            loss_enc_gen.append(ge_losses/len(self.train_loader))
+            loss_dis.append(d_losses/len(self.train_loader))
+
+        self.plot_loss(loss_enc_gen, loss_dis)
+
         return self.Encoder, self.Generator, self.Discriminator
