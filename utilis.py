@@ -24,6 +24,10 @@ RANDOM_SEED = 42
 FREQ_PRINT = 20 
 
 latent_dim = 200 #<- to do 
+PATH_TRAIN  = './dataset/train_typical'
+PATH_VALIDATION  = './dataset/validation_typical'
+
+latent_dim = 200 #<- to do 
 
 class SelectChannels(object):
     def __call__(self, img):
@@ -56,39 +60,38 @@ def train_model(model_name, epoch_number, lr, device):
 
 
     if model_name == "GAN":
+        # model = BiGAN.train_GAN.TrainerBiGAN(epoch_number, lr, train_loader, device)
+        # encoder, generator, discriminator = model.train()
+
+        # torch.save({
+        #     'encoder_state_dict': encoder.state_dict(),
+        #     'generator_state_dict': generator.state_dict(),
+        #     'discriminator_state_dict': discriminator.state_dict(),
+        # }, 'models/models.pth')
+
+
+        ## Sekcja do testów anaomali 
         
-        model = BiGAN.train_GAN.TrainerBiGAN(epoch_number, lr, train_loader, device)
-        encoder, generator, discriminator = model.train()
+        print("LOADING")
 
-        torch.save({
-            'encoder_state_dict': encoder.state_dict(),
-            'generator_state_dict': generator.state_dict(),
-            'discriminator_state_dict': discriminator.state_dict(),
-        }, 'models/models.pth')
+        encoder = BiGAN.encoder.GanEncoder().to(device)  # Replace Encoder with your actual encoder class
+        generator = BiGAN.generator.GanGenerator().to(device) # Replace Generator with your actual generator class
+        discriminator = BiGAN.discriminator.GanDiscriminator().to(device)  # Replace Discriminator with your actual discriminator class
 
-
-        ### Sekcja do testów anaomali 
+        checkpoint = torch.load('models/models.pth')
+        encoder.load_state_dict(checkpoint['encoder_state_dict'])
+        generator.load_state_dict(checkpoint['generator_state_dict'])
+        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
         
-        # print("LOADING")
+        print("#################### NORMAL ####################")
 
-        # encoder = BiGAN.encoder.GanEncoder().to(device)  # Replace Encoder with your actual encoder class
-        # generator = BiGAN.generator.GanGenerator().to(device) # Replace Generator with your actual generator class
-        # discriminator = BiGAN.discriminator.GanDiscriminator().to(device)  # Replace Discriminator with your actual discriminator class
+        tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_typical_loader, device)
+        result = tester.test()
 
-        # checkpoint = torch.load('models/models2.pth')
-        # encoder.load_state_dict(checkpoint['encoder_state_dict'])
-        # generator.load_state_dict(checkpoint['generator_state_dict'])
-        # discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-        
-        # print("#################### NORMAL ####################")
+        print("#################### NOVEL ####################")
 
-        # tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_typical_loader, device)
-        # result = tester.test()
-
-        # print("#################### NOVEL ####################")
-
-        # tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
-        # result = tester.test()
+        tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
+        result = tester.test()
 
 
     elif model_name == "VAE":
@@ -98,4 +101,4 @@ def train_model(model_name, epoch_number, lr, device):
         pass
     
     else:
-        raise ValueError("Unkown Model")
+        raise ValueError("Unknown Model")
