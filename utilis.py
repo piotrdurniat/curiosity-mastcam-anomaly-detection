@@ -8,6 +8,9 @@ import BiGAN.discriminator
 import BiGAN.encoder
 import BiGAN.generator
 import BiGAN.train_GAN
+import torch.nn
+from tqdm import tqdm 
+import torchvision.transforms as transforms
 import dataset
 import yaml
 from torch.utils.data import DataLoader
@@ -24,6 +27,9 @@ RANDOM_SEED = 42
 FREQ_PRINT = 20 
 
 latent_dim = 200 #<- to do 
+=======
+PATH_TRAIN  = './dataset/train_typical'
+PATH_VALIDATION  = './dataset/validation_typical'
 
 def train_model(model_name, epoch_number, lr, device):
 
