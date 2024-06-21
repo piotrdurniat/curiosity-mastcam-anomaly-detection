@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from typing import List, Optional
+from typing import List
 
 from torch import Tensor
 from torch.nn import functional as F
