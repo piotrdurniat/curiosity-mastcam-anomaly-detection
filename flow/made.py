@@ -14,14 +14,13 @@ class Made(nn.Module):
         self,
         in_dim: int,
         hidden_dims: List[int],
-        gaussian: bool = False,
         random_order: bool = False,
     ):
         super().__init__()
 
         self.in_dim = in_dim
         self.hidden_dims = hidden_dims
-        self.out_dim = 2 * in_dim if gaussian else in_dim
+        self.out_dim = 2 * in_dim
 
         self.random_order = random_order
 
