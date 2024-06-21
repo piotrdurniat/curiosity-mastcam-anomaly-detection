@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
+import numpy as np
 
 from .real_nvp import RealNVP
 
@@ -41,25 +42,28 @@ class TrainerRealNVP:
                 self.optimizer.zero_grad()
 
                 # Forward pass
-                y, log_det_jacobian = self.model(x)
+                y, log_det_sum = self.model(x)
 
                 # Loss
-                nll = self._loss(y, log_det_jacobian)
+                loss = self._loss(y, log_det_sum)
 
                 # Backward pass
-                nll.backward()
+                loss.backward()
                 self.optimizer.step()
 
-                epoch_loss += nll.item()
-                print(nll.item())
+                epoch_loss += loss.item()
+                print(loss.item())
 
             epoch_time = time.time() - start_time
             print(f"Epoch: {epoch + 1} done in {epoch_time:.2f} seconds")
             print(f"Loss: {epoch_loss / len(self.train_loader):.3f}")
 
 
-    def _loss(self, y: Tensor, log_det: Tensor):
-        log_likelihood = torch.sum(-0.5 * (y ** 2 + torch.log(2 * torch.pi * torch.ones_like(y))), dim=[1, 2, 3])
-        loss = - (log_likelihood + log_det).mean()
+    def _loss(self, y: Tensor, log_det_sum: Tensor):
+        prior = torch.distributions.normal.Normal(0.0, 1.0)
 
-        return loss
+        log_pz = prior.log_prob(y).sum(dim=[1, 2, 3])
+        log_px = log_det_sum + log_pz
+        nll = -log_px.mean()
+
+        return nll
