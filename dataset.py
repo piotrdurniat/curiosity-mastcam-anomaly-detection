@@ -1,4 +1,5 @@
 from torch.utils import data
+from torch import Tensor
 import torch
 import numpy as np
 import os
@@ -47,5 +48,22 @@ class ToTensorWithScaling:
 
         # [min_val, max_val]
         image = image * (self.max_val - self.min_val) + self.min_val
+
+        return image
+    
+
+class Dequantize:
+    def __init__(self, logit: bool = True, deq: bool = True, alpha: float = 1.0e-6):
+        self.logit = logit
+        self.deq = deq
+        self.alpha = alpha
+
+    def __call__(self, image):
+        image = torch.tensor(image, dtype=torch.float32)
+        image = torch.permute(image, (2, 0, 1))
+        
+        image = (image + np.random.rand(*image.shape)) / 256.0
+        x = self.alpha + (1 - 2 * self.alpha) * image
+        image = np.log(x / (1.0 - x))
 
         return image
