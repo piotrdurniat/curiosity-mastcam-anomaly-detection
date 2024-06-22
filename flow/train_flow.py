@@ -4,17 +4,17 @@ import torch.optim as optim
 import time
 import numpy as np
 
-from .real_nvp import RealNVP
+from .maf import MAF
 
 from torch import Tensor
 from torch.utils.data import DataLoader
 
 
 
-class TrainerRealNVP:
+class TrainerMAF:
     def __init__(
         self,
-        model: RealNVP,
+        model: MAF,
         epochs: int,
         lr: float,
         train_loader: DataLoader,
@@ -36,34 +36,33 @@ class TrainerRealNVP:
             start_time = time.time()
 
             epoch_loss = 0.0
-            for image, _ in self.train_loader:
-                x = image.to(self.device)
+            for image_batch, _ in self.train_loader:
+                x = image_batch.to(self.device)
+                x = x.view(x.size(0), -1)
 
                 self.optimizer.zero_grad()
 
-                # Forward pass
-                y, log_det_sum = self.model(x)
+                z, log_det_sum = self.model(x.float())
 
-                # Loss
-                loss = self._loss(y, log_det_sum)
-
-                # Backward pass
+                loss = self._loss(z, log_det_sum, x.size(1))
+                epoch_loss += loss.item()
                 loss.backward()
+
+                print(f"Loss: {loss.item()}")
+
                 self.optimizer.step()
 
-                epoch_loss += loss.item()
-                print(loss.item())
-
             epoch_time = time.time() - start_time
+            avg_loss = np.sum(epoch_loss) / len(self.train_loader)
+
             print(f"Epoch: {epoch + 1} done in {epoch_time:.2f} seconds")
-            print(f"Loss: {epoch_loss / len(self.train_loader):.3f}")
+            print(f"Loss: {avg_loss:.3f}")
 
 
-    def _loss(self, y: Tensor, log_det_sum: Tensor):
-        prior = torch.distributions.normal.Normal(0.0, 1.0)
-
-        log_pz = prior.log_prob(y).sum(dim=[1, 2, 3])
-        log_px = log_det_sum + log_pz
-        nll = -log_px.mean()
+    def _loss(self, z, log_det, n_of_features):
+        nll = 0.5 * (z ** 2).sum(dim=1)
+        nll += 0.5 * n_of_features * np.log(2 * np.pi)
+        nll -= log_det
+        nll = torch.mean(nll)
 
         return nll
