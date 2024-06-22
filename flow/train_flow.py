@@ -10,7 +10,6 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 
 
-
 class TrainerMAF:
     def __init__(
         self,

@@ -27,8 +27,8 @@ class ImageDataLoader(data.Dataset):
 
         image_labels = torch.zeros(image.shape[0])
         return image, image_labels
-    
 
+      
 class ToTensorWithScaling:
     def __init__(self, min_val: float = 0.0, max_val: float = 1.0, eps: float = 1e-6):
         self.min_val = min_val
@@ -50,7 +50,7 @@ class ToTensorWithScaling:
         image = image * (self.max_val - self.min_val) + self.min_val
 
         return image
-    
+
 
 class Dequantize:
     def __init__(self, logit: bool = True, deq: bool = True, alpha: float = 1.0e-6):
