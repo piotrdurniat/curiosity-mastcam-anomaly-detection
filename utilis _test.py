@@ -23,10 +23,19 @@ PATH_VALIDATION  = './dataset/validation_typical'
 
 def train_model(model_name, batch, device):
 
-    transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)),
+    if model_name == "GAN":
+        transform=transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,)),
     ])
+
+    elif model_name == "VAE":
+        # TODO: confirm this is correct or change it
+        transform = dataset.ToTensorWithScaling(-1.0, 1.0)
+
+    elif model_name == "FLOW":
+        transform = dataset.Dequantize()
+
 
     test_typical_dataset = dataset.ImageDataLoader(PATH_TEST_TYPICAL, transform=transform)
     test_novel_dataset = dataset.ImageDataLoader(PATH_TEST_NOVEL, transform=transform)

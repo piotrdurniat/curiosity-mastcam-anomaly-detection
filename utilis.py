@@ -28,7 +28,6 @@ PATH_TEST_NOVEL   = './dataset/test_novel/all'
 RANDOM_SEED = 42
 FREQ_PRINT = 20 
 
-latent_dim = 200 #<- to do 
 PATH_TRAIN  = './dataset/train_typical'
 PATH_VALIDATION  = './dataset/validation_typical'
 
@@ -36,8 +35,15 @@ latent_dim = 200 #<- to do
 
 def train_model(model_name, epoch_number, lr, device):
 
-#     transform = dataset.ToTensorWithScaling()
-      transform = dataset.Dequantize()
+    if model_name == "GAN":
+        transform = dataset.ToTensorWithScaling()
+
+    elif model_name == "VAE":
+        # TODO: confirm this is correct or change it
+        transform = dataset.ToTensorWithScaling(-1.0, 1.0)
+
+    elif model_name == "FLOW":
+        transform = dataset.Dequantize()
 
     print(model_name, lr, epoch_number, device)
 
@@ -109,5 +115,3 @@ def train_model(model_name, epoch_number, lr, device):
 
     else:
         raise ValueError("Unkown Model")
-    
-train_model(model_name="FLOW", epoch_number=2, lr=1e-4, device="cpu")
