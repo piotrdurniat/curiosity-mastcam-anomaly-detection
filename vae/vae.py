@@ -156,6 +156,9 @@ class VariationalAutoencoder(BaseAutoEncoder):
         takes: tensor of shape [batch_size x [image-size]] (input images batch)
         returns: tensor of shape [batch_size x latent_feature_size] (latent vector)
         """
+        # print(x)
+        # print(x.shape)
+
         if self.input_shape is None:
             self.input_shape = x.shape[1:]
         x = x.view(x.shape[0], -1)
