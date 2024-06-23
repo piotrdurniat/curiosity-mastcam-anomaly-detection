@@ -2,7 +2,7 @@ from typing import List, Tuple
 import torch
 import torch.nn as nn
 from torch import Tensor
-from .layers import BatchNormLayer
+from .layers import BatchNormLayerWithRunning
 from .maf_layer import MAFLayer
 
 
@@ -22,7 +22,7 @@ class MAF(nn.Module):
 
         for _ in range(n_layers):
             self.layers.append(MAFLayer(n_of_features, hidden_dims, reverse=use_reverse))
-            self.layers.append(BatchNormLayer(n_of_features))
+            self.layers.append(BatchNormLayerWithRunning(n_of_features))
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
         log_det_sum = torch.zeros(x.shape[0])
@@ -41,3 +41,9 @@ class MAF(nn.Module):
             log_det_sum += log_det_jacobian
 
         return x, log_det_sum
+    
+    def log_prob(self, x: Tensor) -> Tensor:
+        _, log_det_sum = self.forward(x)
+        nll = torch.mean(log_det_sum)
+
+        return -nll

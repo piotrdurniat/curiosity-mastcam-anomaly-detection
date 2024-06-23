@@ -18,19 +18,14 @@ class AnomalyScore():
 
         self.model.eval()
 
-
         for index, (x, _) in enumerate(self.loader): 
-
             x = x.to(self.device)
-            z, log_jacobian = self.model.forward(x)
+            x = x.view(x.size(0), -1)
 
-            x_hat, _ = self.model.inverse(z)
-            
-            log_likelihood = -torch.sum(0.5 * (z ** 2 + torch.log(torch.tensor(2 * torch.pi)))) - log_jacobian
-            reconstruction_loss = torch.norm(x - x_hat, p=1, dim=1).mean()
+            with torch.no_grad():
+                nll = self.model.log_prob(x)
 
-            A = self.alpha * reconstruction_loss + (1 - self.alpha) * log_likelihood.mean()
-            results_dict[type_of_label + '_' + str(index)] = A.detach().numpy()
+            results_dict[type_of_label + '_' + str(index)] = nll.item()
             print(type_of_label + '_' + str(index))
 
         return results_dict

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .maf import MAF
 
@@ -24,11 +25,28 @@ class TrainerMAF:
         self.lr = lr
         self.train_loader = train_loader
         self.device = device
-
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+
+
+    def plot_loss(self, model_loss):
+        epochs = np.arange(1, self.epochs + 1)
+
+        plt.figure(figsize=(12, 6))
+    
+        plt.plot(epochs, model_loss, label='Strata modelu')
+        plt.xlabel('Liczba epok')
+        plt.ylabel('Strata')
+        plt.title('Strata modelu MAF w zależności od liczby epok')
+        plt.legend()
+        
+        plt.tight_layout()
+        plt.savefig("/results/Flow_loss.png")
+
 
     def train(self):
         self.model.train()
+
+        model_loss = []
 
         for epoch in range(self.epochs):
             print(f"Starting epoch {epoch + 1}")
@@ -55,8 +73,11 @@ class TrainerMAF:
             avg_loss = np.sum(epoch_loss) / len(self.train_loader)
 
             print(f"Epoch: {epoch + 1} done in {epoch_time:.2f} seconds")
-            print(f"Loss: {avg_loss:.3f}")
+            print(f"Average Loss: {avg_loss:.3f}")
 
+            model_loss.append(avg_loss)
+
+        self.plot_loss(model_loss)
 
     def _loss(self, z, log_det, n_of_features):
         nll = 0.5 * (z ** 2).sum(dim=1)
