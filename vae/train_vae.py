@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pyro
 import torch
 import torch.optim as optim
+from numpy import save
 from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
@@ -148,6 +149,7 @@ def train_and_save(
     val_loader: DataLoader,
     lr: float,
     model_name: str = "vae",
+    save_path: str = "models",
 ) -> None:
     """Train AE model and save it to disk.
     :param model: AE model
@@ -171,7 +173,7 @@ def train_and_save(
         model, epochs, train_loader, val_loader, lr, loss_fn, loss_fn_args
     )
 
-    model_dir = Path("./models")
+    model_dir = Path(save_path)
     model_path = model_dir / f"{model_name}-{timestamp}.pth"
 
     torch.save(model.state_dict(), model_path)

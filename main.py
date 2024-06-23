@@ -19,6 +19,7 @@ def main():
         epoch_number=args.epochs,
         lr=args.lr,
         device=args.device,
+        save_path=args.save,
     )
 
 
