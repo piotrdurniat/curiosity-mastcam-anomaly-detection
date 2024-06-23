@@ -1,7 +1,9 @@
+import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
-import numpy as np
+import pyro
 import torch
 import torch.optim as optim
 from sklearn.metrics import mean_squared_error
@@ -21,7 +23,7 @@ def train_ae(
     lr: float,
     loss_fn: callable,
     loss_fn_args: Optional[Tuple[Any]] = None,
-) -> Tuple[VariationalAutoencoder, Metric, Metric]:
+) -> Tuple[BaseAutoEncoder, Metric, Metric]:
     """Train AE model and plot metrics.
     :param model: AE model
     :param epochs: number of epochs to train
@@ -145,8 +147,6 @@ def train_and_save(
     train_loader: DataLoader,
     val_loader: DataLoader,
     lr: float,
-    loss_fn: callable,
-    loss_fn_args: Optional[Tuple[Any]] = None,
     model_name: str = "vae",
 ) -> None:
     """Train AE model and save it to disk.
@@ -160,9 +160,19 @@ def train_and_save(
         instead of input and output
     :param model_name: name of the model to be saved
     """
+
+    pyro.enable_validation(False)
+
+    timestamp = str(int(time.time()))
+    loss_fn = pyro.infer.Trace_ELBO().differentiable_loss
+    loss_fn_args = (model, model.guide)
+
     model, train_metrics, val_metrics = train_ae(
         model, epochs, train_loader, val_loader, lr, loss_fn, loss_fn_args
     )
 
-    torch.save(model.state_dict(), f"./models/{model_name}.pth")
-    print(f"Model saved to ./models/{model_name}.pth")
+    model_dir = Path("./models")
+    model_path = model_dir / f"{model_name}-{timestamp}.pth"
+
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")

@@ -1,23 +1,43 @@
 # Curiosity Mastcam Novelty Detection
 
-Python 3.11.8 <- Elo Elo 3 2 0 
+This repository contains the code for the novelty detection project using the Curiosity Mastcam images.
 
+## Requirements
 
-How to run?
+- Python 3.11+
 
-Choose model from:
-- GAN
-- VAE 
-- FLOW 
+Install the required packages by running:
 
-python main.py --model VAE --epochs 50 --lr 0.0005 --device cuda
+```bash
+pip install -r requirements_linux_cpu.txt
+```
+or 
+```bash
+pip install -r requirements_linux_gpu.txt
+```
 
+## Usage
 
-Dane pochodzą z:
+Example usage (run from the root directory):
 
-https://zenodo.org/records/3732485
+```bash
+python3 main.py --lr 1e-6 --model VAE --epochs 1 --device cuda
+```
 
-umieścić odpakowanie w folderze dataset
+Arguments:
+- `--model` - model to use (one of GAN, VAE, FLOW)
+- `--epochs` - number of epochs to train
+- `--lr` - learning rate
+- `--device` - device to use (eg.cpu or cuda)
+
+## Dataset
+
+Multispectral images of Mars taken by the Curiosity rover. The dataset is divided into four parts: train_typical, validation_typical, test_typical, and test_novel.
+
+Source:
+- https://zenodo.org/records/3732485
+
+To download the dataset run:
 
 ```bash
 cd dataset

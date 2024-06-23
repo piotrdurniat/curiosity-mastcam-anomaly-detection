@@ -1,6 +1,8 @@
-import torch 
-import torch.nn as nn
-import numpy as np
+from typing import Literal
+
+import torch
+from sympy import Li
+from torch.utils.data import DataLoader
 
 import BiGAN
 import BiGAN.detect_GAN
@@ -9,59 +11,65 @@ import BiGAN.encoder
 import BiGAN.generator
 import BiGAN.results
 import BiGAN.train_GAN
-
-import flow.train_flow
-import flow.maf
-import flow.layers
-
 import dataset
-import yaml
+import flow.layers
+import flow.maf
+import flow.train_flow
+from vae.train_vae import train_and_save
+from vae.vae import VariationalAutoencoder
 
-import torchvision.transforms as transforms
-import torch.optim as optim
-from torch import Tensor
-from torch.utils.data import DataLoader
-
-
-PATH_TEST_TYPICAL  = './dataset/test_typical'
-PATH_TEST_NOVEL   = './dataset/test_novel/all'
+PATH_TEST_TYPICAL = "./dataset/test_typical"
+PATH_TEST_NOVEL = "./dataset/test_novel/all"
 
 RANDOM_SEED = 42
-FREQ_PRINT = 20 
+FREQ_PRINT = 20
 
-PATH_TRAIN  = './dataset/train_typical'
-PATH_VALIDATION  = './dataset/validation_typical'
+PATH_TRAIN = "./dataset/train_typical"
+PATH_VALIDATION = "./dataset/validation_typical"
 
-latent_dim = 200 #<- to do 
+ModelType = Literal["GAN", "VAE", "FLOW"]
 
-def train_model(model_name, epoch_number, lr, device):
 
+def get_transform(model_name: ModelType):
     if model_name == "GAN":
-        transform = dataset.ToTensorWithScaling()
+        return dataset.ToTensorWithScaling()
 
     elif model_name == "VAE":
-        # TODO: confirm this is correct or change it
-        transform = dataset.ToTensorWithScaling(-1.0, 1.0)
+        return dataset.ToTensorWithScaling(-1.0, 1.0)
 
     elif model_name == "FLOW":
-        transform = dataset.Dequantize()
+        return dataset.Dequantize()
 
-    print(model_name, lr, epoch_number, device)
+    else:
+        raise ValueError("Unknown model")
 
+
+def get_loaders(transform, batch_size: int):
     train_dataset = dataset.ImageDataLoader(PATH_TRAIN, transform=transform)
     valdiaiton_dataset = dataset.ImageDataLoader(PATH_VALIDATION, transform=transform)
 
-    test_typical_dataset = dataset.ImageDataLoader(PATH_TEST_TYPICAL, transform=transform)
+    test_typical_dataset = dataset.ImageDataLoader(
+        PATH_TEST_TYPICAL, transform=transform
+    )
     test_novel_dataset = dataset.ImageDataLoader(PATH_TEST_NOVEL, transform=transform)
 
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(valdiaiton_dataset, batch_size=batch_size)
 
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    val_loader = DataLoader(valdiaiton_dataset, batch_size=64)
-    
-    
     test_typical_loader = DataLoader(test_typical_dataset, batch_size=1)
     test_novel_loader = DataLoader(test_novel_dataset, batch_size=1)
 
+    return train_loader, val_loader, test_typical_loader, test_novel_loader
+
+
+def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str):
+    print(model_name, lr, epoch_number, device)
+
+    transform = get_transform(model_name)
+    train_loader, val_loader, test_typical_loader, test_novel_loader = get_loaders(
+        transform,
+        64,
+    )
 
     if model_name == "GAN":
         # model = BiGAN.train_GAN.TrainerBiGAN(epoch_number, lr, train_loader, device)
@@ -73,40 +81,71 @@ def train_model(model_name, epoch_number, lr, device):
         #     'discriminator_state_dict': discriminator.state_dict(),
         # }, 'models/models.pth')
 
-        ## Sekcja do testów anaomali 
-        
+        ## Sekcja do testów anaomali
+
         print("LOADING")
 
-        encoder = BiGAN.encoder.GanEncoder().to(device)  # Replace Encoder with your actual encoder class
-        generator = BiGAN.generator.GanGenerator().to(device) # Replace Generator with your actual generator class
-        discriminator = BiGAN.discriminator.GanDiscriminator().to(device)  # Replace Discriminator with your actual discriminator class
+        encoder = BiGAN.encoder.GanEncoder().to(
+            device
+        )  # Replace Encoder with your actual encoder class
+        generator = BiGAN.generator.GanGenerator().to(
+            device
+        )  # Replace Generator with your actual generator class
+        discriminator = BiGAN.discriminator.GanDiscriminator().to(
+            device
+        )  # Replace Discriminator with your actual discriminator class
 
-        checkpoint = torch.load('models/models.pth')
-        encoder.load_state_dict(checkpoint['encoder_state_dict'])
-        generator.load_state_dict(checkpoint['generator_state_dict'])
-        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-        
+        checkpoint = torch.load("models/models.pth")
+        encoder.load_state_dict(checkpoint["encoder_state_dict"])
+        generator.load_state_dict(checkpoint["generator_state_dict"])
+        discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
+
         print("#################### NORMAL ####################")
 
-        tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_typical_loader, device)
+        tester = BiGAN.detect_GAN.AnomalyScore(
+            generator, encoder, discriminator, test_typical_loader, device
+        )
         result = tester.test()
 
         print("#################### NOVEL ####################")
 
-        tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
+        tester = BiGAN.detect_GAN.AnomalyScore(
+            generator, encoder, discriminator, test_novel_loader, device
+        )
         result = tester.test()
-        
-        
-    elif model_name == "VAE":
-        pass
 
-      
+    elif model_name == "VAE":
+
+        n_data_features = 64 * 64 * 6
+        n_hidden_features = 1024
+        n_latent_features = 256
+
+        model = VariationalAutoencoder(
+            n_data_features=n_data_features,
+            n_encoder_hidden_features=n_hidden_features,
+            n_decoder_hidden_features=n_hidden_features,
+            n_latent_features=n_latent_features,
+        )
+
+        print(f"Starting training: \n{n_latent_features=}, {n_hidden_features=}, {lr=}")
+
+        train_and_save(
+            model=model,
+            epochs=epoch_number,
+            train_loader=train_loader,
+            val_loader=val_loader,
+            lr=lr,
+            model_name="vae",
+        )
+
     elif model_name == "FLOW":
         model = flow.maf.MAF(6 * 64 * 64, [64], 5, use_reverse=True)
-        trainer = flow.train_flow.TrainerMAF(model, epoch_number, lr, train_loader, device)
+        trainer = flow.train_flow.TrainerMAF(
+            model, epoch_number, lr, train_loader, device
+        )
         trainer.train()
 
-        save_flow_model(model, 'models/maf_02.pth')
+        save_flow_model(model, "models/maf_02.pth")
 
     else:
         raise ValueError("Unkown Model")
@@ -114,13 +153,17 @@ def train_model(model_name, epoch_number, lr, device):
 
 def save_flow_model(model: flow.maf.MAF, path: str):
     model_state = {
-        'model_state_dict': model.state_dict(),
-        'batch_norm_running_states': {},
+        "model_state_dict": model.state_dict(),
+        "batch_norm_running_states": {},
     }
 
     for index, layer in enumerate(model.layers):
         if isinstance(layer, flow.layers.BatchNormLayerWithRunning):
-            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_mean"] = layer.running_mean
-            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"] = layer.running_var
+            model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_mean"
+            ] = layer.running_mean
+            model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_var"
+            ] = layer.running_var
 
     torch.save(model_state, path)
