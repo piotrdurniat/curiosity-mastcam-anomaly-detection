@@ -9,6 +9,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--save", type=str, required=True)
 
     args = parser.parse_args()
     print(args)
