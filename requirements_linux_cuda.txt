@@ -46,3 +46,4 @@ triton==2.3.1
 typing_extensions==4.12.2
 yarl==1.9.4
 pyro-ppl==1.9.0
+scikit-learn==1.5.0
