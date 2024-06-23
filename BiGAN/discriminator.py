@@ -7,20 +7,20 @@ class GanDiscriminator(nn.Module):
 
         self.D_X_layers = nn.ModuleList([
             nn.Conv2d(6, 64, kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.1),
+            nn.LeakyReLU(0.25),
             nn.Dropout2d(p=0.5),
 
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(128, affine=False),
-            nn.LeakyReLU(0.1),
+            nn.LeakyReLU(0.25),
 
             nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm2d(256, affine=False),
-            nn.LeakyReLU(0.1),
+            nn.LeakyReLU(0.25),
         ])
 
         self.D_Z_layers = nn.ModuleList([
-            nn.Linear(200, 512),
+            nn.Linear(800, 512),
             nn.LeakyReLU(0.1),
         ])
 

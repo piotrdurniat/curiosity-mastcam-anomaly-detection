@@ -72,47 +72,20 @@ def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str
     )
 
     if model_name == "GAN":
-        # model = BiGAN.train_GAN.TrainerBiGAN(epoch_number, lr, train_loader, device)
-        # encoder, generator, discriminator = model.train()
 
-        # torch.save({
-        #     'encoder_state_dict': encoder.state_dict(),
-        #     'generator_state_dict': generator.state_dict(),
-        #     'discriminator_state_dict': discriminator.state_dict(),
-        # }, 'models/models.pth')
-
-        ## Sekcja do testów anaomali
-
-        print("LOADING")
-
-        encoder = BiGAN.encoder.GanEncoder().to(
-            device
-        )  # Replace Encoder with your actual encoder class
-        generator = BiGAN.generator.GanGenerator().to(
-            device
-        )  # Replace Generator with your actual generator class
-        discriminator = BiGAN.discriminator.GanDiscriminator().to(
-            device
-        )  # Replace Discriminator with your actual discriminator class
-
-        checkpoint = torch.load("models/models.pth")
-        encoder.load_state_dict(checkpoint["encoder_state_dict"])
-        generator.load_state_dict(checkpoint["generator_state_dict"])
-        discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
-
-        print("#################### NORMAL ####################")
-
-        tester = BiGAN.detect_GAN.AnomalyScore(
-            generator, encoder, discriminator, test_typical_loader, device
+        model = BiGAN.train_GAN.TrainerBiGAN(
+            epoch_number, lr, train_loader, val_loader, device
         )
-        result = tester.test()
+        encoder, generator, discriminator = model.train()
 
-        print("#################### NOVEL ####################")
-
-        tester = BiGAN.detect_GAN.AnomalyScore(
-            generator, encoder, discriminator, test_novel_loader, device
+        torch.save(
+            {
+                "encoder_state_dict": encoder.state_dict(),
+                "generator_state_dict": generator.state_dict(),
+                "discriminator_state_dict": discriminator.state_dict(),
+            },
+            "models/BiGAN.pth",
         )
-        result = tester.test()
 
     elif model_name == "VAE":
 

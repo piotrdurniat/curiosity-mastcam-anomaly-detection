@@ -22,7 +22,7 @@ def give_results(true_image_loss, fake_image_loss):
     # Plot confusion matrix
     cm_display.plot()
     plt.title('Macierz konfuzji')
-    plt.savefig("/results/BiGAN_con_table.png")
+    plt.savefig("./results/BiGAN_con_table.png")
 
     # Calculate F1 score and precision
     f1 = f1_score(true_labels, predicted_labels)

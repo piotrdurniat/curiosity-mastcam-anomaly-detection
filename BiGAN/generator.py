@@ -9,7 +9,7 @@ class GanGenerator(nn.Module):
         super(GanGenerator, self).__init__()
 
         self.layers_fc = nn.Sequential(
-            nn.Linear(200, 1024),
+            nn.Linear(800, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU( inplace=False),
 
