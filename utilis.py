@@ -12,6 +12,7 @@ import BiGAN.train_GAN
 
 import flow.train_flow
 import flow.maf
+import flow.layers
 
 import dataset
 import yaml
@@ -102,16 +103,24 @@ def train_model(model_name, epoch_number, lr, device):
       
     elif model_name == "FLOW":
         model = flow.maf.MAF(6 * 64 * 64, [64], 5, use_reverse=True)
-        # trainer = flow.train_flow.TrainerMAF(model, epoch_number, lr, train_loader, device)
-        # trainer.train()
+        trainer = flow.train_flow.TrainerMAF(model, epoch_number, lr, train_loader, device)
+        trainer.train()
 
-        # torch.save({
-        #     'model_state_dict': model.state_dict(),
-        # }, 'models/maf_02.pth')
-
-        checkpoint = torch.load('models/maf_02.pth')
-        model.load_state_dict(checkpoint["model_state_dict"])
-
+        save_flow_model(model, 'models/maf_02.pth')
 
     else:
         raise ValueError("Unkown Model")
+
+
+def save_flow_model(model: flow.maf.MAF, path: str):
+    model_state = {
+        'model_state_dict': model.state_dict(),
+        'batch_norm_running_states': {},
+    }
+
+    for index, layer in enumerate(model.layers):
+        if isinstance(layer, flow.layers.BatchNormLayerWithRunning):
+            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_mean"] = layer.running_mean
+            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"] = layer.running_var
+
+    torch.save(model_state, path)
