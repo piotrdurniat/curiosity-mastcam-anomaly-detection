@@ -59,3 +59,5 @@ traitlets==5.14.3
 typing_extensions==4.9.0
 wcwidth==0.2.13
 yarl==1.9.4
+pyro-ppl==1.9.0
+scikit-learn==1.5.0
