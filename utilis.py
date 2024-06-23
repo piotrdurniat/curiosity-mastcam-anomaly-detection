@@ -1,7 +1,6 @@
 from typing import Literal
 
 import torch
-from sympy import Li
 from torch.utils.data import DataLoader
 
 import BiGAN

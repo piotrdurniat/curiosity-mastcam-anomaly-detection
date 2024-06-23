@@ -39,6 +39,9 @@ def test_model(
     test_typical_loader = DataLoader(test_typical_dataset, batch_size=batch)
     test_novel_loader = DataLoader(test_novel_dataset, batch_size=batch)
 
+    train_dataset = dataset.ImageDataLoader(PATH_TRAIN, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch, shuffle=True)
+
     if model_name == "GAN":
 
         print("LOADING")
@@ -72,7 +75,9 @@ def test_model(
     elif model_name == "VAE":
         load_and_test_vae(
             model_path=load_path,
-            test_loader=test_typical_loader,
+            test_typical_loader=test_typical_loader,
+            test_novel_loader=test_novel_loader,
+            train_loader=train_loader,
             device=device,
             save_path=save_path,
         )

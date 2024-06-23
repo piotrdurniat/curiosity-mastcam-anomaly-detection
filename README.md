@@ -18,6 +18,8 @@ pip install -r requirements_linux_gpu.txt
 
 ## Usage
 
+### Train
+
 Example usage (run from the root directory):
 
 ```bash
@@ -29,6 +31,21 @@ Arguments:
 - `--epochs` - number of epochs to train
 - `--lr` - learning rate
 - `--device` - device to use (eg.cpu or cuda)
+
+### Test
+
+Example usage (run from the root directory):
+
+```bash
+python3 ./main_test.py --model VAE --batch 1 --device cpu --load ./vae/model/vae_model-250-epoch.pth --save results/vae
+```
+
+Arguments:
+- `--model` - model to use (one of GAN, VAE, FLOW)
+- `--batch` - batch size
+- `--device` - device to use (eg.cpu or cuda)
+- `--load` - path to the model to load
+- `--save` - path to save the results
 
 ## Dataset
 
