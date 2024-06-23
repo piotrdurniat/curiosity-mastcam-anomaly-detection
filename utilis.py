@@ -61,7 +61,7 @@ def get_loaders(transform, batch_size: int):
     return train_loader, val_loader, test_typical_loader, test_novel_loader
 
 
-def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str):
+def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str, save_path: str):
     print(model_name, lr, epoch_number, device)
 
     transform = get_transform(model_name)
@@ -83,7 +83,7 @@ def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str
                 "generator_state_dict": generator.state_dict(),
                 "discriminator_state_dict": discriminator.state_dict(),
             },
-            "models/BiGAN.pth",
+            save_path,
         )
 
     elif model_name == "VAE":
@@ -111,13 +111,13 @@ def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str
         )
 
     elif model_name == "FLOW":
-        model = flow.maf.MAF(6 * 64 * 64, [64], 5, use_reverse=True)
+        model = flow.maf.MAF(6 * 64 * 64, [64, 64, 64, 64, 64], 5, use_reverse=True)
         trainer = flow.train_flow.TrainerMAF(
             model, epoch_number, lr, train_loader, device
         )
         trainer.train()
 
-        save_flow_model(model, "models/maf_02.pth")
+        save_flow_model(model, save_path)
 
     else:
         raise ValueError("Unkown Model")
