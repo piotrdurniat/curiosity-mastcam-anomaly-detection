@@ -11,11 +11,11 @@ import BiGAN.generator
 import BiGAN.results
 import BiGAN.train_GAN
 import dataset
+import flow.detect_flow
+import flow.maf
+import flow.results
 from utilis import ModelType
 from vae.test_vae import load_and_test_vae
-import flow.maf
-import flow.detect_flow
-import flow.results
 
 PATH_TEST_TYPICAL = "./dataset/test_typical"
 PATH_TEST_NOVEL = "./dataset/test_novel/all"
@@ -106,7 +106,7 @@ def test_model(
         print("LOADING")
         model = flow.maf.MAF(64 * 64 * 6, [64, 64, 64, 64, 64], 5, use_reverse=True)
         model = load_flow_model(model, load_path)
-        
+
         print("#################### NORMAL ####################")
 
         tester = flow.detect_flow.AnomalyScore(model, test_typical_loader, device)
@@ -124,11 +124,15 @@ def test_model(
 
 def load_flow_model(model, path):
     model_state = torch.load(path)
-    model.load_state_dict(model_state['model_state_dict'])
+    model.load_state_dict(model_state["model_state_dict"])
 
     for index, layer in enumerate(model.layers):
         if isinstance(layer, flow.layers.BatchNormLayerWithRunning):
-            layer.running_mean = model_state["batch_norm_running_states"][f"batch_norm_{index}_running_mean"]
-            layer.running_var = model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"]
+            layer.running_mean = model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_mean"
+            ]
+            layer.running_var = model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_var"
+            ]
 
     return model

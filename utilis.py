@@ -61,7 +61,9 @@ def get_loaders(transform, batch_size: int):
     return train_loader, val_loader, test_typical_loader, test_novel_loader
 
 
-def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str, save_path: str):
+def train_model(
+    model_name: ModelType, epoch_number: int, lr: float, device: str, save_path: str
+):
     print(model_name, lr, epoch_number, device)
 
     transform = get_transform(model_name)
@@ -108,6 +110,7 @@ def train_model(model_name: ModelType, epoch_number: int, lr: float, device: str
             val_loader=val_loader,
             lr=lr,
             model_name="vae",
+            save_path=save_path,
         )
 
     elif model_name == "FLOW":

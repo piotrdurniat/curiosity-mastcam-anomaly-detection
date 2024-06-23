@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import torch
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, mean_squared_error
 from torch.utils.data import DataLoader
 
 from vae.vae import BaseAutoEncoder, VariationalAutoencoder
@@ -93,20 +94,40 @@ def test_vae(
     novel_novelty_scores = novelty_detection.compute_novelty_score(test_novel_loader)
 
     # save the novelty scores
-    typical_novelty_scores_file = save_path + "/typical_novelty_scores.npy"
-    novel_novelty_scores_file = save_path + "/novel_novelty_scores.npy"
+    typical_novelty_scores_file = save_path + "/typical_novelty_scores.txt"
+    novel_novelty_scores_file = save_path + "/novel_novelty_scores.txt"
 
     print(f"Saving typical novelty scores to {typical_novelty_scores_file}")
     print(f"Saving novel novelty scores to {novel_novelty_scores_file}")
 
-    torch.save(typical_novelty_scores, typical_novelty_scores_file)
-    torch.save(novel_novelty_scores, novel_novelty_scores_file)
+    with open(typical_novelty_scores_file, "w") as f:
+        for score in typical_novelty_scores:
+            f.write(f"{score}\n")
+
+    with open(novel_novelty_scores_file, "w") as f:
+        for score in novel_novelty_scores:
+            f.write(f"{score}\n")
 
     draw_charts(save_path, typical_novelty_scores, novel_novelty_scores)
 
-    threshold = 0.5
+    threshold = 6
     typical_labels = classify_novelty(typical_novelty_scores, threshold)
     novel_labels = classify_novelty(novel_novelty_scores, threshold)
+
+    # save the labels in txt file
+    typical_labels_file = save_path + "/typical_labels.txt"
+    novel_labels_file = save_path + "/novel_labels.txt"
+
+    print(f"Saving typical labels to {typical_labels_file}")
+    print(f"Saving novel labels to {novel_labels_file}")
+
+    with open(typical_labels_file, "w") as f:
+        for label in typical_labels:
+            f.write(f"{label}\n")
+
+    with open(novel_labels_file, "w") as f:
+        for label in novel_labels:
+            f.write(f"{label}\n")
 
     true_labels = [False] * len(typical_labels) + [True] * len(novel_labels)
     predicted_labels = typical_labels + novel_labels
@@ -124,6 +145,8 @@ def test_vae(
         f.write(f"Precision: {precision}\n")
         f.write(f"Recall: {recall}\n")
         f.write(f"F1 score: {f1_score}\n")
+
+    draw_confusion_matrix(true_labels, predicted_labels, save_path)
 
 
 def load_model(
@@ -248,3 +271,57 @@ def compute_metrics(true_labels, predicted_labels):
     f1_score = 2 * precision * recall / (precision + recall)
 
     return precision, recall, f1_score
+
+
+def draw_charts(save_dir: str, typical_novelty_scores, novel_novelty_scores):
+
+    # Create the subplots
+    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+
+    # Histogram of novelty scores
+    axes[0].hist(
+        typical_novelty_scores, bins=50, alpha=0.5, color="blue", label="Typical"
+    )
+    axes[0].hist(novel_novelty_scores, bins=50, alpha=0.5, color="red", label="Novel")
+    axes[0].set_title("Histogram of novelty scores")
+    axes[0].legend()
+
+    # Boxplot of novelty scores
+    axes[1].boxplot([typical_novelty_scores, novel_novelty_scores])
+    axes[1].set_title("Boxplot of novelty scores")
+
+    # Empirical CDF of novelty scores
+    n_bins = 100
+    counts, bin_edges = np.histogram(typical_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Typical", color="blue")
+
+    counts, bin_edges = np.histogram(novel_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Novel", color="red")
+    axes[2].set_title("Empirical CDF of novelty scores")
+    axes[2].legend()
+
+    # Save the figure to a file
+    plt.tight_layout()
+    plt.savefig(save_dir + "/novelty_scores.png")
+    # Show the plots
+    plt.show()
+
+
+def draw_confusion_matrix(true_labels, predicted_labels, save_path):
+
+    # clear plot
+    plt.clf()
+
+    # use skleran confusion matrix
+    cm = confusion_matrix(true_labels, predicted_labels)
+    cm_display = ConfusionMatrixDisplay(
+        confusion_matrix=cm, display_labels=["Typical", "Novel"]
+    )
+
+    # save the confusion matrix
+    cm_display.plot()
+    plt.title("Confusion Matrix")
+    plt.savefig(save_path + "/confusion_matrix.png")
+    plt.show()
