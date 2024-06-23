@@ -1,7 +1,10 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader
 
+from utilistest import draw_charts
 from vae.vae import BaseAutoEncoder, VariationalAutoencoder
 
 
@@ -50,11 +53,38 @@ def test_vae(
     )
     novel_novelty_scores = novelty_detection.compute_novelty_score(test_novel_loader)
 
-    # compare the novelty scores
-    print("Typical novelty scores:")
-    print(typical_novelty_scores)
-    print("Novel novelty scores:")
-    print(novel_novelty_scores)
+    # save the novelty scores
+    typical_novelty_scores_file = save_path + "/typical_novelty_scores.npy"
+    novel_novelty_scores_file = save_path + "/novel_novelty_scores.npy"
+
+    print(f"Saving typical novelty scores to {typical_novelty_scores_file}")
+    print(f"Saving novel novelty scores to {novel_novelty_scores_file}")
+
+    torch.save(typical_novelty_scores, typical_novelty_scores_file)
+    torch.save(novel_novelty_scores, novel_novelty_scores_file)
+
+    draw_charts(save_path, typical_novelty_scores, novel_novelty_scores)
+
+    threshold = 0.5
+    typical_labels = classify_novelty(typical_novelty_scores, threshold)
+    novel_labels = classify_novelty(novel_novelty_scores, threshold)
+
+    true_labels = [False] * len(typical_labels) + [True] * len(novel_labels)
+    predicted_labels = typical_labels + novel_labels
+
+    precision, recall, f1_score = compute_metrics(true_labels, predicted_labels)
+
+    print(f"Precision: {precision}")
+    print(f"Recall: {recall}")
+    print(f"F1 score: {f1_score}")
+
+    # save the metrics
+    metrics_file = save_path + "/metrics.txt"
+    print(f"Saving metrics to {metrics_file}")
+    with open(metrics_file, "w") as f:
+        f.write(f"Precision: {precision}\n")
+        f.write(f"Recall: {recall}\n")
+        f.write(f"F1 score: {f1_score}\n")
 
 
 def load_model(
@@ -142,3 +172,40 @@ class NoveltyDetection:
                 novelty_scores.extend(min_distances.cpu().numpy())
 
         return novelty_scores
+
+
+def classify_novelty(novelty_scores, threshold):
+    """
+    Classify the novelty scores as typical or novel based on a threshold
+    :param novelty_scores: List of novelty scores
+    :param threshold: Threshold value
+    :return: List of classifications
+    """
+    return [score > threshold for score in novelty_scores]
+
+
+def compute_metrics(true_labels, predicted_labels):
+    """
+    Compute precision, recall, and F1 score
+    :param true_labels: List of true labels
+    :param predicted_labels: List of predicted labels
+    :return: Precision, recall, F1 score
+    """
+    true_positives = sum(
+        [1 for true, pred in zip(true_labels, predicted_labels) if true and pred]
+    )
+    false_positives = sum(
+        [1 for true, pred in zip(true_labels, predicted_labels) if not true and pred]
+    )
+    false_negatives = sum(
+        [1 for true, pred in zip(true_labels, predicted_labels) if true and not pred]
+    )
+
+    if (true_positives + false_positives) == 0:
+        return 0, 0, 0
+
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / (true_positives + false_negatives)
+    f1_score = 2 * precision * recall / (precision + recall)
+
+    return precision, recall, f1_score
