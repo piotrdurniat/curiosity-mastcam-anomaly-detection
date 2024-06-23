@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
@@ -21,6 +23,20 @@ PATH_TRAIN = "./dataset/train_typical"
 PATH_VALIDATION = "./dataset/validation_typical"
 
 
+def get_transform(model_name: ModelType):
+    if model_name == "GAN":
+        return dataset.ToTensorWithScaling()
+
+    elif model_name == "VAE":
+        return dataset.ToTensorWithScaling(-1.0, 1.0)
+
+    elif model_name == "FLOW":
+        return dataset.Dequantize()
+
+    else:
+        raise ValueError("Unknown model")
+
+
 def test_model(
     model_name: ModelType,
     batch: int,
@@ -29,7 +45,7 @@ def test_model(
     save_path: str,
 ):
 
-    transform = dataset.ToTensorWithScaling()
+    transform = get_transform(model_name)
 
     test_typical_dataset = dataset.ImageDataLoader(
         PATH_TEST_TYPICAL, transform=transform
@@ -87,3 +103,43 @@ def test_model(
 
     else:
         raise ValueError("Unknown Model")
+
+
+def draw_charts(save_dir: str, typical_novelty_scores, novel_novelty_scores):
+
+    # Example data for demonstration purposes
+    typical_novelty_scores = np.random.normal(loc=0, scale=1, size=1000)
+    novel_novelty_scores = np.random.normal(loc=1, scale=1.5, size=1000)
+
+    # Create the subplots
+    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+
+    # Histogram of novelty scores
+    axes[0].hist(
+        typical_novelty_scores, bins=50, alpha=0.5, color="blue", label="Typical"
+    )
+    axes[0].hist(novel_novelty_scores, bins=50, alpha=0.5, color="red", label="Novel")
+    axes[0].set_title("Histogram of novelty scores")
+    axes[0].legend()
+
+    # Boxplot of novelty scores
+    axes[1].boxplot([typical_novelty_scores, novel_novelty_scores])
+    axes[1].set_title("Boxplot of novelty scores")
+
+    # Empirical CDF of novelty scores
+    n_bins = 100
+    counts, bin_edges = np.histogram(typical_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Typical", color="blue")
+
+    counts, bin_edges = np.histogram(novel_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Novel", color="red")
+    axes[2].set_title("Empirical CDF of novelty scores")
+    axes[2].legend()
+
+    # Save the figure to a file
+    plt.tight_layout()
+    plt.savefig(save_dir + "/novelty_scores.png")
+    # Show the plots
+    plt.show()
