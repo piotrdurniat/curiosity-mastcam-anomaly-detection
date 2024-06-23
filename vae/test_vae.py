@@ -4,7 +4,6 @@ import torch
 from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader
 
-from utilistest import draw_charts
 from vae.vae import BaseAutoEncoder, VariationalAutoencoder
 
 
