@@ -12,7 +12,7 @@ Choose model from:
 
 python main.py --model VAE --epochs 50 --lr 0.0005 --device cuda
 
-
+python main.py --model GAN --epochs 50 --lr 5e-5 --device cuda
 Dane pochodzą z:
 
 https://zenodo.org/records/3732485
