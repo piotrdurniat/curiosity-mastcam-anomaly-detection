@@ -18,3 +18,15 @@ Dane pochodzą z:
 https://zenodo.org/records/3732485
 
 umieścić odpakowanie w folderze dataset
+
+```bash
+cd dataset
+curl -O https://zenodo.org/records/3732485/files/test_novel.zip
+curl -O https://zenodo.org/records/3732485/files/test_typical.zip
+curl -O https://zenodo.org/records/3732485/files/train_typical.zip
+curl -O https://zenodo.org/records/3732485/files/validation_typical.zip
+unzip test_novel.zip
+unzip test_typical.zip
+unzip train_typical.zip
+unzip validation_typical.zip
+```
