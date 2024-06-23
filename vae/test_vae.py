@@ -8,6 +8,46 @@ from utilistest import draw_charts
 from vae.vae import BaseAutoEncoder, VariationalAutoencoder
 
 
+def draw_charts(save_dir: str, typical_novelty_scores, novel_novelty_scores):
+
+    # Example data for demonstration purposes
+    # typical_novelty_scores = np.random.normal(loc=0, scale=1, size=1000)
+    # novel_novelty_scores = np.random.normal(loc=1, scale=1.5, size=1000)
+
+    # Create the subplots
+    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
+
+    # Histogram of novelty scores
+    axes[0].hist(
+        typical_novelty_scores, bins=50, alpha=0.5, color="blue", label="Typical"
+    )
+    axes[0].hist(novel_novelty_scores, bins=50, alpha=0.5, color="red", label="Novel")
+    axes[0].set_title("Histogram of novelty scores")
+    axes[0].legend()
+
+    # Boxplot of novelty scores
+    axes[1].boxplot([typical_novelty_scores, novel_novelty_scores])
+    axes[1].set_title("Boxplot of novelty scores")
+
+    # Empirical CDF of novelty scores
+    n_bins = 100
+    counts, bin_edges = np.histogram(typical_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Typical", color="blue")
+
+    counts, bin_edges = np.histogram(novel_novelty_scores, bins=n_bins, density=True)
+    cdf = np.cumsum(counts)
+    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Novel", color="red")
+    axes[2].set_title("Empirical CDF of novelty scores")
+    axes[2].legend()
+
+    # Save the figure to a file
+    plt.tight_layout()
+    plt.savefig(save_dir + "/novelty_scores.png")
+    # Show the plots
+    plt.show()
+
+
 def load_and_test_vae(
     model_path: str,
     test_typical_loader: DataLoader,
