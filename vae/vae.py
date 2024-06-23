@@ -14,8 +14,6 @@ class VEncoder(nn.Module):
     input_to_hidden: nn.Linear
     hidden_to_mu: nn.Linear
     hidden_to_sigma: nn.Linear
-    N: torch.distributions.Normal
-    kl: float
 
     def __init__(
         self,
@@ -24,32 +22,28 @@ class VEncoder(nn.Module):
         n_latent_features: int,
     ):
         """
-        :param n_input_features: number of input features (28 x 28 = 784 for MNIST)
-        :param n_hidden_neurons: number of neurons in hidden FC layer
+        :param n_input_features: number of input features (width x height x channels)
+        :param n_hidden_neurons: number of neurons in the hidden FC layer
         :param n_latent_features: size of the latent vector
         """
         super().__init__()
-
-        # TU WPISZ KOD
         self.input_to_hidden = nn.Linear(n_input_features, n_hidden_neurons)
         self.hidden_to_mu = nn.Linear(n_hidden_neurons, n_latent_features)
         self.hidden_to_sigma = nn.Linear(n_hidden_neurons, n_latent_features)
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Encode data to gaussian distribution params."""
-
-        # TU WPISZ KOD
+        """Encode data to gaussian distribution params"""
         x = F.relu(self.input_to_hidden(x))
         z_loc = self.hidden_to_mu(x)
-        # exponential activation to ensure the result is positive
-        # z_scale = torch.exp(self.hidden_to_sigma(x))
         z_scale = self.hidden_to_sigma(x).exp()
-
         return z_loc, z_scale
 
 
 class VDecoder(nn.Module):
-    """Decoder for VAE."""
+    """Decoder for VAE"""
+
+    latent_to_hidden: nn.Linear
+    hidden_to_output: nn.Linear
 
     def __init__(
         self,
@@ -58,25 +52,27 @@ class VDecoder(nn.Module):
         n_output_features: int,
     ):
         """
-        :param n_latent_features: number of latent features (same as in Encoder)
-        :param n_hidden_neurons: number of neurons in hidden FC layer
-        :param n_output_features: size of the output vector (28 x 28 = 784 for MNIST)
+        :param n_latent_features: number of latent features
+        :param n_hidden_neurons: number of neurons in the hidden FC layer
+        :param n_output_features: size of the output vector (width x height x channels)
         """
         super().__init__()
-        # TU WPISZ KOD
         self.latent_to_hidden = nn.Linear(n_latent_features, n_hidden_neurons)
         self.hidden_to_output = nn.Linear(n_hidden_neurons, n_output_features)
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Decode latent vector to image."""
-        # TU WPISZ KOD
+        """Decode latent vector to image"""
         r = F.relu(self.latent_to_hidden(z))
         r = torch.sigmoid(self.hidden_to_output(r))
         return r
 
 
 class BaseAutoEncoder(nn.Module):
-    """Base AutoEncoder module class."""
+    """Base AutoEncoder module class"""
+
+    n_latent_features: int
+    encoder: nn.Module
+    decoder: nn.Module
 
     def __init__(self, encoder: nn.Module, decoder: nn.Module, n_latent_features: int):
         """
@@ -85,9 +81,7 @@ class BaseAutoEncoder(nn.Module):
         :param n_latent_features: number of latent features in the AE
         """
         super().__init__()
-
         self.n_latent_features: int = n_latent_features
-
         self.encoder: nn.Module = encoder
         self.decoder: nn.Module = decoder
 
@@ -99,7 +93,7 @@ class BaseAutoEncoder(nn.Module):
     def encoder_forward(self, x: torch.Tensor) -> torch.Tensor:
         """Function to perform forward pass through encoder network.
 
-        takes: tensor of shape [batch_size x input_flattened_size] (flattened input)
+        :param x: tensor of shape [batch_size x input_flattened_size] (flattened input)
         returns: tensor of shape [batch_size x latent_feature_size] (latent vector)
         """
         raise NotImplementedError()
@@ -107,17 +101,14 @@ class BaseAutoEncoder(nn.Module):
     def decoder_forward(self, z: torch.Tensor) -> torch.Tensor:
         """Function to perform forward pass through decoder network.
 
-        takes: tensor of shape [batch_size x latent_feature_size] (latent vector)
-        returns: tensor of shape [batch_size x output_flattened_size] (flettened output)
+        param z: tensor of shape [batch_size x latent_feature_size] (latent vector)
+        returns: tensor of shape [batch_size x output_flattened_size] (flattened output)
         """
         raise NotImplementedError()
 
 
 class VariationalAutoencoder(BaseAutoEncoder):
     """Variational Auto Encoder model."""
-
-    N: torch.distributions.Normal
-    kl: float
 
     def __init__(
         self,
@@ -146,9 +137,7 @@ class VariationalAutoencoder(BaseAutoEncoder):
             encoder=encoder, decoder=decoder, n_latent_features=n_latent_features
         )
         self.input_shape = None
-
         self.N = torch.distributions.Normal(0, 1)
-
         self.kl = 0
 
     def encoder_forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -156,16 +145,11 @@ class VariationalAutoencoder(BaseAutoEncoder):
         takes: tensor of shape [batch_size x [image-size]] (input images batch)
         returns: tensor of shape [batch_size x latent_feature_size] (latent vector)
         """
-        # print(x)
-        # print(x.shape)
-
         if self.input_shape is None:
             self.input_shape = x.shape[1:]
         x = x.view(x.shape[0], -1)
-
         z_loc, z_scale = self.encoder(x)
-        z = z_loc + z_scale * self.N.sample(z_loc.shape)
-
+        z = z_loc + z_scale * self.N.sample(z_loc.shape).to(z_loc.device)
         return z
 
     def decoder_forward(self, z: torch.Tensor) -> torch.Tensor:
@@ -180,8 +164,8 @@ class VariationalAutoencoder(BaseAutoEncoder):
         """Pyro model for VAE; p(x|z)p(z)."""
         pyro.module("decoder", self.decoder)
         with pyro.plate("data", x.shape[0]):
-            z_loc = torch.zeros((x.shape[0], self.n_latent_features))
-            z_scale = torch.ones((x.shape[0], self.n_latent_features))
+            z_loc = torch.zeros((x.shape[0], self.n_latent_features)).to(x.device)
+            z_scale = torch.ones((x.shape[0], self.n_latent_features)).to(x.device)
             z = pyro.sample("latent", dist.Normal(z_loc, z_scale).to_event(1))
             output = self.decoder.forward(z).view(-1, *self.input_shape)
             pyro.sample("obs", dist.Bernoulli(output).to_event(3), obs=x)
@@ -212,8 +196,8 @@ class BetaVariationalAutoencoder(VariationalAutoencoder):
         """Pyro model for beta-VAE; p(x|z)p(z)."""
         pyro.module("decoder", self.decoder)
         with pyro.plate("data", x.shape[0]):
-            z_loc = torch.zeros((x.shape[0], self.n_latent_features))
-            z_scale = torch.ones((x.shape[0], self.n_latent_features))
+            z_loc = torch.zeros((x.shape[0], self.n_latent_features)).to(x.device)
+            z_scale = torch.ones((x.shape[0], self.n_latent_features)).to(x.device)
             z = pyro.sample("latent", dist.Normal(z_loc, z_scale).to_event(1))
             output = self.decoder.forward(z).view(-1, *self.input_shape)
             pyro.sample("obs", dist.Bernoulli(output).to_event(3), obs=x)
