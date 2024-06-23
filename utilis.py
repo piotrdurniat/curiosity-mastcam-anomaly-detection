@@ -102,7 +102,7 @@ def train_model(model_name, epoch_number, lr, device):
 
       
     elif model_name == "FLOW":
-        model = flow.maf.MAF(6 * 64 * 64, [128, 128], 5, use_reverse=True)
+        model = flow.maf.MAF(6 * 64 * 64, [64, 64, 64, 64, 64], 5, use_reverse=True)
         trainer = flow.train_flow.TrainerMAF(model, epoch_number, lr, train_loader, device)
         trainer.train()
 

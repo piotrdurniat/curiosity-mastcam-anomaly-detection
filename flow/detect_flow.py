@@ -1,14 +1,10 @@
-import torch 
-import torch.nn as nn
-import torch.functional as F
-from torch.autograd import Variable
+import torch
 
 
 class AnomalyScore():
-    def __init__(self, model, loader, device,  alpha=0.5):
+    def __init__(self, model, loader, device):
         
         self.model = model
-        self.alpha = alpha
         self.device = device
         self.loader = loader
 

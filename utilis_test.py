@@ -81,7 +81,7 @@ def train_model(model_name, batch, device):
 
     elif model_name == "FLOW":
         print("LOADING")
-        model = flow.maf.MAF(64 * 64 * 6, [128, 128], 5, use_reverse=True)
+        model = flow.maf.MAF(64 * 64 * 6, [64, 64, 64, 64, 64], 5, use_reverse=True)
         model = load_flow_model(model, 'models/maf.pth')
         
         print("#################### NORMAL ####################")
@@ -147,5 +147,3 @@ def display_reproductions(model, loader, n=8):
     plt.show()
 
 train_model("FLOW", 1, "cpu")
-
-input()
