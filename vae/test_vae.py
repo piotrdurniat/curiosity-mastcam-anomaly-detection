@@ -2,15 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import torch
-from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    confusion_matrix,
-    f1_score,
-    mean_squared_error,
-    precision_score,
-)
+from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix, mean_squared_error
 from torch.utils.data import DataLoader
 
+from utilistest import draw_charts
 from vae.vae import BaseAutoEncoder, VariationalAutoencoder
 
 
