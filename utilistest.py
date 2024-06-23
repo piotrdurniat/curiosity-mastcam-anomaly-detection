@@ -11,11 +11,11 @@ import BiGAN.generator
 import BiGAN.results
 import BiGAN.train_GAN
 import dataset
+import flow.detect_flow
+import flow.maf
+import flow.results
 from utilis import ModelType
 from vae.test_vae import load_and_test_vae
-import flow.maf
-import flow.detect_flow
-import flow.results
 
 PATH_TEST_TYPICAL = "./dataset/test_typical"
 PATH_TEST_NOVEL = "./dataset/test_novel/all"
@@ -68,7 +68,7 @@ def test_model(
         generator = BiGAN.generator.GanGenerator().to(device)
         discriminator = BiGAN.discriminator.GanDiscriminator().to(device)
 
-        checkpoint = torch.load("models/BiGAN.pth")
+        checkpoint = torch.load(load_path)
         encoder.load_state_dict(checkpoint["encoder_state_dict"])
         generator.load_state_dict(checkpoint["generator_state_dict"])
         discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
@@ -89,7 +89,7 @@ def test_model(
         result_fake = tester.test("fake")
         tester.plot_images("fake")
 
-        BiGAN.results.give_results(result_true, result_fake)
+        BiGAN.results.give_results(result_true, result_fake, save_path)
 
     elif model_name == "VAE":
         load_and_test_vae(
@@ -106,7 +106,7 @@ def test_model(
         print("LOADING")
         model = flow.maf.MAF(64 * 64 * 6, [64, 64, 64, 64, 64], 5, use_reverse=True)
         model = load_flow_model(model, load_path)
-        
+
         print("#################### NORMAL ####################")
 
         tester = flow.detect_flow.AnomalyScore(model, test_typical_loader, device)
@@ -124,52 +124,15 @@ def test_model(
 
 def load_flow_model(model, path):
     model_state = torch.load(path)
-    model.load_state_dict(model_state['model_state_dict'])
+    model.load_state_dict(model_state["model_state_dict"])
 
     for index, layer in enumerate(model.layers):
         if isinstance(layer, flow.layers.BatchNormLayerWithRunning):
-            layer.running_mean = model_state["batch_norm_running_states"][f"batch_norm_{index}_running_mean"]
-            layer.running_var = model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"]
+            layer.running_mean = model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_mean"
+            ]
+            layer.running_var = model_state["batch_norm_running_states"][
+                f"batch_norm_{index}_running_var"
+            ]
 
     return model
-
-
-def draw_charts(save_dir: str, typical_novelty_scores, novel_novelty_scores):
-
-    # Example data for demonstration purposes
-    typical_novelty_scores = np.random.normal(loc=0, scale=1, size=1000)
-    novel_novelty_scores = np.random.normal(loc=1, scale=1.5, size=1000)
-
-    # Create the subplots
-    fig, axes = plt.subplots(1, 3, figsize=(20, 5))
-
-    # Histogram of novelty scores
-    axes[0].hist(
-        typical_novelty_scores, bins=50, alpha=0.5, color="blue", label="Typical"
-    )
-    axes[0].hist(novel_novelty_scores, bins=50, alpha=0.5, color="red", label="Novel")
-    axes[0].set_title("Histogram of novelty scores")
-    axes[0].legend()
-
-    # Boxplot of novelty scores
-    axes[1].boxplot([typical_novelty_scores, novel_novelty_scores])
-    axes[1].set_title("Boxplot of novelty scores")
-
-    # Empirical CDF of novelty scores
-    n_bins = 100
-    counts, bin_edges = np.histogram(typical_novelty_scores, bins=n_bins, density=True)
-    cdf = np.cumsum(counts)
-    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Typical", color="blue")
-
-    counts, bin_edges = np.histogram(novel_novelty_scores, bins=n_bins, density=True)
-    cdf = np.cumsum(counts)
-    axes[2].plot(bin_edges[1:], cdf / cdf[-1], label="Novel", color="red")
-    axes[2].set_title("Empirical CDF of novelty scores")
-    axes[2].legend()
-
-    # Save the figure to a file
-    plt.tight_layout()
-    plt.savefig(save_dir + "/novelty_scores.png")
-    # Show the plots
-    plt.show()
-
