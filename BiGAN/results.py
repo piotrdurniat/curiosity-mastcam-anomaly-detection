@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, precision_score
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, precision_score, recall_score
 
-def give_results(true_image_loss, fake_image_loss):
+def give_results(true_image_loss, fake_image_loss, save_path):
     # Calculate average loss
     avg_true_loss = np.mean(list(true_image_loss.values()))
     avg_fake_loss = np.mean(list(fake_image_loss.values()))
@@ -22,14 +22,20 @@ def give_results(true_image_loss, fake_image_loss):
     # Plot confusion matrix
     cm_display.plot()
     plt.title('Macierz konfuzji')
-    plt.savefig("./results/BiGAN_con_table.png")
+    plt.savefig(f"{save_path}/BiGAN_con_table.png")
 
     # Calculate F1 score and precision
     f1 = f1_score(true_labels, predicted_labels)
     precision = precision_score(true_labels, predicted_labels)
+    recall = recall_score(true_labels, predicted_labels)
 
-    print(f"F1 Score: {f1}")
-    print(f"Precyzja: {precision}")
+    # print(f"F1 Score: {f1}")
+    # print(f"Precyzja: {precision}")
+
+    with open(f"{save_path}/metrics.txt", "w") as file:
+        file.write(f"Precision: {precision}\n")
+        file.write(f"Recall: {recall}\n")
+        file.write(f"F1 score: {f1}\n")
 
 # true_image_loss = {f"true_{i}": np.random.rand() for i in range(50)}
 # fake_image_loss = {f"fake_{i}": np.random.rand()+0.2 for i in range(50)}
