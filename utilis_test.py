@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 import BiGAN
 import BiGAN.detect_GAN
 import BiGAN.discriminator
@@ -78,8 +81,8 @@ def train_model(model_name, batch, device):
 
     elif model_name == "FLOW":
         print("LOADING")
-        model = flow.maf.MAF(64 * 64 * 6, [64], 5, use_reverse=True)
-        model = load_flow_model(model, 'models/maf_02.pth')
+        model = flow.maf.MAF(64 * 64 * 6, [128, 128], 5, use_reverse=True)
+        model = load_flow_model(model, 'models/maf.pth')
         
         print("#################### NORMAL ####################")
 
@@ -91,6 +94,8 @@ def train_model(model_name, batch, device):
         tester = flow.detect_flow.AnomalyScore(model, test_novel_loader, device)
         result_fake = tester.test("fake")
         flow.results.give_results(result_true, result_fake)
+
+        # display_reproductions(model, test_novel_loader)
     
     else:
         raise ValueError("Unknown Model")
@@ -106,3 +111,41 @@ def load_flow_model(model, path):
             layer.running_var = model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"]
 
     return model
+
+def display_reproductions(model, loader, n=8):
+    reconstructions = []
+    inputs = []
+    model.eval()
+    device = next(model.parameters()).device  
+
+    with torch.no_grad():
+        for i, (input, _) in enumerate(loader):
+            if i >= n:
+                break
+            x = input.to(device)  
+            x = x.view(x.size(0), -1)
+            inputs.append(input.cpu())
+            rec = model(x)[0].cpu()
+            reconstructions.append(rec.view(input.size())) 
+
+    fig, axes = plt.subplots(2, n, figsize=(20, 5))
+    for i in range(n):
+        rec = reconstructions[i][0].squeeze(0)
+        rec = rec[:3, :, :]
+        rec = np.transpose(rec, (1, 2, 0))
+        rec = np.take(rec, [2, 0, 1], axis=2)
+
+        img = inputs[i][0].squeeze(0)
+        img = img[:3, :, :]
+        img = np.transpose(img, (1, 2, 0))
+        img = np.take(img, [2, 0, 1], axis=2)
+
+        axes[0, i].imshow(np.interp(img, (img.min(), img.max()), (0, 1)))
+        axes[1, i].imshow(np.interp(rec, (rec.min(), rec.max()), (0, 1)))
+        axes[0, i].axis("off")
+        axes[1, i].axis("off")
+    plt.show()
+
+train_model("FLOW", 1, "cpu")
+
+input()
