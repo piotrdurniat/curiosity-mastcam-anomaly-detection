@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 
-from vae.vae import VariationalAutoencoder
+from vae.vae import BaseAutoEncoder, VariationalAutoencoder
 
 Metric = Dict[str, List[float]]
 
@@ -137,3 +137,32 @@ def plot_metrics(
     ax2.grid()
     ax2.legend()
     plt.show()
+
+
+def train_and_save(
+    model: BaseAutoEncoder,
+    epochs: int,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    lr: float,
+    loss_fn: callable,
+    loss_fn_args: Optional[Tuple[Any]] = None,
+    model_name: str = "vae",
+) -> None:
+    """Train AE model and save it to disk.
+    :param model: AE model
+    :param epochs: number of epochs to train
+    :param train_loader: train dataset loader
+    :param val_loader: validation dataset loader
+    :param lr: learning rate
+    :param loss_fn: loss function to be applied
+    :param loss_fn_kwargs: optional args to be passed to loss function
+        instead of input and output
+    :param model_name: name of the model to be saved
+    """
+    model, train_metrics, val_metrics = train_ae(
+        model, epochs, train_loader, val_loader, lr, loss_fn, loss_fn_args
+    )
+
+    torch.save(model.state_dict(), f"./models/{model_name}.pth")
+    print(f"Model saved to ./models/{model_name}.pth")
