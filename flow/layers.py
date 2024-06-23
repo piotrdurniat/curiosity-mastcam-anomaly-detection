@@ -18,7 +18,7 @@ class MaskedLinear(nn.Linear):
         self.mask = mask
 
     def forward(self, x: Tensor) -> Tensor:
-        masked_weights = self.mask * self.weight if self.training else self.weight
+        masked_weights = self.mask * self.weight
 
         return F.linear(x, masked_weights, self.bias)
 
