@@ -68,7 +68,7 @@ def test_model(
         generator = BiGAN.generator.GanGenerator().to(device)
         discriminator = BiGAN.discriminator.GanDiscriminator().to(device)
 
-        checkpoint = torch.load("models/BiGAN.pth")
+        checkpoint = torch.load(load_path)
         encoder.load_state_dict(checkpoint["encoder_state_dict"])
         generator.load_state_dict(checkpoint["generator_state_dict"])
         discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
@@ -89,7 +89,7 @@ def test_model(
         result_fake = tester.test("fake")
         tester.plot_images("fake")
 
-        BiGAN.results.give_results(result_true, result_fake)
+        BiGAN.results.give_results(result_true, result_fake, save_path)
 
     elif model_name == "VAE":
         load_and_test_vae(
