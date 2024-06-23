@@ -1,13 +1,16 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.optim as optim
 from sklearn.metrics import mean_squared_error
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm, trange
 
-from vae import BaseAutoEncoder
+from vae.vae import VariationalAutoencoder
+
+Metric = Dict[str, List[float]]
 
 
 def train_ae(
@@ -18,7 +21,7 @@ def train_ae(
     lr: float,
     loss_fn: callable,
     loss_fn_args: Optional[Tuple[Any]] = None,
-) -> Tuple[Dict[str, List[float]], Dict[str, List[float]]]:
+) -> Tuple[VariationalAutoencoder, Metric, Metric]:
     """Train AE model and plot metrics.
     :param model: AE model
     :param epochs: number of epochs to train
@@ -28,7 +31,7 @@ def train_ae(
     :param loss_fn: loss function to be applied
     :param loss_fn_kwargs: optional args to be passed to loss function
         instead of input and output
-    :return: trained model
+    :return: trained model, train metrics, validation metrics
     """
     train_metrics = {
         "loss": [],
@@ -43,14 +46,17 @@ def train_ae(
 
     global_step = 0
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     for epoch in trange(epochs, desc="epoch"):
 
-        # training step
         model.train()
         pbar = tqdm(train_loader, desc="step", leave=False)
-        for inputs, _ in pbar:  # we are not using labels for training
+        for inputs, _ in pbar:
+            inputs = inputs.to(device)
+
             optimizer.zero_grad()
             reconstructions = model(inputs)
             if loss_fn_args is None:
@@ -65,8 +71,8 @@ def train_ae(
             train_metrics["loss"].append(loss.item() / inputs.shape[0])
             train_metrics["mse"].append(
                 mean_squared_error(
-                    inputs.detach().view(inputs.shape[0], -1),
-                    reconstructions.detach().view(reconstructions.shape[0], -1),
+                    inputs.detach().cpu().view(inputs.shape[0], -1),
+                    reconstructions.detach().cpu().view(reconstructions.shape[0], -1),
                 )
             )
             train_metrics["step"].append(global_step)
@@ -82,6 +88,7 @@ def train_ae(
         with torch.no_grad():
             total = 0
             for inputs, _ in val_loader:
+                inputs = inputs.to(device)
                 reconstructions = model(inputs)
                 if loss_fn_args is None:
                     args = (reconstructions, inputs)
@@ -94,14 +101,21 @@ def train_ae(
         val_metrics["loss"].append(val_loss.item() / total)
         val_metrics["mse"].append(
             mean_squared_error(
-                inputs.view(inputs.shape[0], -1),
-                reconstructions.view(reconstructions.shape[0], -1),
+                inputs.cpu().view(inputs.shape[0], -1),
+                reconstructions.cpu().view(reconstructions.shape[0], -1),
             )
         )
         val_metrics["step"].append(global_step)
 
+        print(
+            f"Epoch: {epoch}, ",
+            f"Train loss: {train_metrics['loss'][-1]}",
+            f"Val loss: {val_metrics['loss'][-1]}",
+            f"Train MSE: {train_metrics['mse'][-1]}",
+        )
+
     plot_metrics(train_metrics, val_metrics)
-    return model
+    return model, train_metrics, val_metrics
 
 
 def plot_metrics(
@@ -122,5 +136,4 @@ def plot_metrics(
     ax1.legend()
     ax2.grid()
     ax2.legend()
-    plt.show()
     plt.show()
