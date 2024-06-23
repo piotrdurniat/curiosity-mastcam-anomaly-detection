@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from utilis import train_model
+from utilis_test import train_model
 
 def main():
 
@@ -11,7 +11,7 @@ def main():
     args = parser.parse_args()
     print(args)
 
-    train_model(model_name=args.model, batch=args.batch, device=args.device)
+    train_model(model_name=args.model, batch=args.batch_size, device=args.device)
 
 
 if __name__ == "__main__":

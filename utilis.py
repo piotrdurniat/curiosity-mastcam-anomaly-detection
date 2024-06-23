@@ -2,12 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-import torchvision.transforms as transforms
-import flow
-import flow.coupling_layer
-import flow.real_nvp
-import flow.train_flow
-import torchvision.transforms as transforms
 import BiGAN
 import BiGAN.detect_GAN
 import BiGAN.discriminator
@@ -15,24 +9,26 @@ import BiGAN.encoder
 import BiGAN.generator
 import BiGAN.results
 import BiGAN.train_GAN
+
+import flow.train_flow
+import flow.maf
+import flow.layers
+
 import dataset
 import yaml
 
+import torchvision.transforms as transforms
+import torch.optim as optim
 from torch import Tensor
 from torch.utils.data import DataLoader
 
 
-PATH_TRAIN  = './dataset/train_typical'
-PATH_VALIDATION  = './dataset/validation_typical'
-
 PATH_TEST_TYPICAL  = './dataset/test_typical'
 PATH_TEST_NOVEL   = './dataset/test_novel/all'
-
 
 RANDOM_SEED = 42
 FREQ_PRINT = 20 
 
-latent_dim = 200 #<- to do 
 PATH_TRAIN  = './dataset/train_typical'
 PATH_VALIDATION  = './dataset/validation_typical'
 
@@ -40,7 +36,15 @@ latent_dim = 200 #<- to do
 
 def train_model(model_name, epoch_number, lr, device):
 
-    transform = dataset.ToTensorWithScaling()
+    if model_name == "GAN":
+        transform = dataset.ToTensorWithScaling()
+
+    elif model_name == "VAE":
+        # TODO: confirm this is correct or change it
+        transform = dataset.ToTensorWithScaling(-1.0, 1.0)
+
+    elif model_name == "FLOW":
+        transform = dataset.Dequantize()
 
     print(model_name, lr, epoch_number, device)
 
@@ -53,6 +57,7 @@ def train_model(model_name, epoch_number, lr, device):
 
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     val_loader = DataLoader(valdiaiton_dataset, batch_size=64)
+    
     
     test_typical_loader = DataLoader(test_typical_dataset, batch_size=1)
     test_novel_loader = DataLoader(test_novel_dataset, batch_size=1)
@@ -91,17 +96,31 @@ def train_model(model_name, epoch_number, lr, device):
         tester = BiGAN.detect_GAN.AnomalyScore(generator, encoder, discriminator, test_novel_loader, device)
         result = tester.test()
         
+        
     elif model_name == "VAE":
         pass
 
+      
     elif model_name == "FLOW":
-        model = flow.real_nvp.RealNVP(6, 64, 6)
-        trainer = flow.train_flow.TrainerRealNVP(model, epoch_number, lr, train_loader, device)
+        model = flow.maf.MAF(6 * 64 * 64, [64], 5, use_reverse=True)
+        trainer = flow.train_flow.TrainerMAF(model, epoch_number, lr, train_loader, device)
         trainer.train()
 
-        torch.save({
-            'model_state_dict': model.state_dict(),
-        }, 'models/flow.pth')
+        save_flow_model(model, 'models/maf_02.pth')
 
     else:
-        raise ValueError("Unknown Model")
+        raise ValueError("Unkown Model")
+
+
+def save_flow_model(model: flow.maf.MAF, path: str):
+    model_state = {
+        'model_state_dict': model.state_dict(),
+        'batch_norm_running_states': {},
+    }
+
+    for index, layer in enumerate(model.layers):
+        if isinstance(layer, flow.layers.BatchNormLayerWithRunning):
+            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_mean"] = layer.running_mean
+            model_state["batch_norm_running_states"][f"batch_norm_{index}_running_var"] = layer.running_var
+
+    torch.save(model_state, path)
