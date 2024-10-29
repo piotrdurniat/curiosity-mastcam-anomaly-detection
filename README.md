@@ -2,6 +2,10 @@
 
 This repository contains the code for the novelty detection project using the Curiosity Mastcam images.
 
+## Report
+
+- [Full report PDF](./report/report.pdf)
+
 ## Requirements
 
 - Python 3.11+
